@@ -36,12 +36,31 @@ WEB_HTML = r"""<!DOCTYPE html>
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; -webkit-tap-highlight-color: transparent; }
-        html, body { background: var(--bg-base); color: var(--text-primary); height: 100vh; width: 100vw; overflow: hidden; position: fixed; }
+        html, body {
+            background: #03060D;
+            color: var(--text-primary);
+            height: 100%;
+            width: 100%;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
 
         /* App Wrapper - Mobile First Single Screen */
         .app-container {
-            display: flex; flex-direction: column; height: 100vh; width: 100vw; max-width: 540px;
-            margin: 0 auto; position: relative; overflow: hidden; background: var(--bg-base);
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            height: 100dvh;
+            width: 100%;
+            max-width: 480px;
+            margin: 0 auto;
+            position: relative;
+            overflow: hidden;
+            background: var(--bg-base);
             box-shadow: 0 0 50px rgba(0,0,0,0.8);
         }
 
@@ -231,7 +250,7 @@ WEB_HTML = r"""<!DOCTYPE html>
 
         /* 5. Live Ticker / Subtitles Bar (Right above the dock) */
         .subtitles-ticker-bar {
-            position: absolute; bottom: 62px; left: 0; right: 0; max-width: 540px; margin: 0 auto;
+            position: absolute; bottom: 62px; left: 0; right: 0; max-width: 480px; margin: 0 auto;
             padding: 0 12px 3px 12px; z-index: 25; pointer-events: none;
         }
         .subtitles-box {
@@ -244,7 +263,7 @@ WEB_HTML = r"""<!DOCTYPE html>
 
         /* 6. Bottom Sticky Dock ("ASK RB Agent") */
         .ask-rb-dock {
-            position: absolute; bottom: 0; left: 0; right: 0; max-width: 540px; margin: 0 auto;
+            position: absolute; bottom: 0; left: 0; right: 0; max-width: 480px; margin: 0 auto;
             height: 62px; background: var(--bg-surface); border-top: 1px solid var(--border);
             padding: 8px 12px; display: flex; align-items: center; gap: 6px; z-index: 30;
         }
@@ -355,7 +374,7 @@ WEB_HTML = r"""<!DOCTYPE html>
         /* Sub-Agents Expanded Modal / View */
         .subagents-expanded-modal {
             position: fixed; inset: 0; background: rgba(6, 10, 19, 0.96); backdrop-filter: blur(8px);
-            z-index: 60; display: none; flex-direction: column; max-width: 540px; margin: 0 auto;
+            z-index: 60; display: none; flex-direction: column; max-width: 480px; margin: 0 auto;
         }
         .subagents-expanded-modal.active { display: flex; }
         .modal-top-bar {
@@ -388,7 +407,7 @@ WEB_HTML = r"""<!DOCTYPE html>
         /* Generic Modals (Settings, Notes, Skills, Code, Web Preview) */
         .subview-modal {
             position: fixed; inset: 0; background: rgba(6, 10, 19, 0.98); backdrop-filter: blur(8px);
-            z-index: 60; display: none; flex-direction: column; max-width: 540px; margin: 0 auto;
+            z-index: 60; display: none; flex-direction: column; max-width: 480px; margin: 0 auto;
         }
         .subview-modal.active { display: flex; }
         .subview-body { flex: 1; overflow-y: auto; padding: 14px; display: flex; flex-direction: column; gap: 12px; }
@@ -418,6 +437,51 @@ WEB_HTML = r"""<!DOCTYPE html>
         .chip-success { background: rgba(16, 185, 129, 0.15); color: var(--accent-green); border: 1px solid var(--accent-green); }
         .chip-warning { background: rgba(245, 158, 11, 0.15); color: var(--accent-amber); border: 1px solid var(--accent-amber); }
         .chip-danger { background: rgba(239, 68, 68, 0.15); color: #EF4444; border: 1px solid #EF4444; }
+
+        /* Responsive Viewport & Device Adapters */
+        @media (min-width: 501px) {
+            body {
+                background: radial-gradient(circle at 50% 20%, #0B162E 0%, #03060D 100%);
+            }
+            .app-container {
+                height: 94dvh;
+                max-height: 890px;
+                border-radius: 28px;
+                border: 1px solid rgba(0, 229, 255, 0.25);
+                box-shadow: 0 0 40px rgba(0, 229, 255, 0.15), 0 20px 60px rgba(0, 0, 0, 0.9);
+            }
+            .subtitles-ticker-bar {
+                max-width: 480px;
+            }
+            .ask-rb-dock {
+                max-width: 480px;
+                border-bottom-left-radius: 28px;
+                border-bottom-right-radius: 28px;
+            }
+            .drawer {
+                border-top-left-radius: 28px;
+                border-bottom-left-radius: 28px;
+            }
+        }
+
+        @media (max-width: 420px) {
+            .app-stage { padding: 8px 10px 115px 10px; gap: 8px; }
+            .jarvis-reactor-disc { width: 114px; height: 114px; }
+            .reactor-orb-core { width: 72px; height: 72px; }
+            .orb-title { font-size: 0.74rem; }
+            .orb-subtitle { font-size: 0.48rem; }
+            .subagent-pill { padding: 6px 2px; }
+            .subagent-icon-emoji { font-size: 1.1rem; }
+            .subagent-name-text { font-size: 0.58rem; }
+            .subagent-state-badge { font-size: 0.46rem; padding: 1px 3px; }
+            .ask-rb-dock { height: 56px; padding: 6px 8px; gap: 4px; }
+            .dock-btn-plus, .dock-btn-livechat, .dock-btn-mic, .dock-btn-send { width: 32px; height: 32px; font-size: 0.8rem; }
+            .dock-model-pill { padding: 3px 6px; font-size: 0.60rem; gap: 3px; }
+            .dock-input-shell { padding: 5px 8px; }
+            .dock-input-shell input { font-size: 0.78rem; }
+            .subtitles-ticker-bar { bottom: 56px; padding: 0 8px 3px 8px; }
+            .subtitles-box { font-size: 0.68rem; padding: 4px 8px; }
+        }
     </style>
 </head>
 <body>
@@ -531,10 +595,10 @@ WEB_HTML = r"""<!DOCTYPE html>
                 <i class="fa-solid fa-plus"></i>
             </button>
 
-            <!-- 2. "Gemini 2.5 Flash" Pill Selector -->
+            <!-- 2. "Gemini 1.5 Flash" Pill Selector -->
             <div class="dock-model-pill" onclick="cycleGeminiModel()" id="dockModelSelector" title="LLM Model Selector">
                 <i class="fa-solid fa-bolt" style="font-size: 0.65rem;"></i>
-                <span id="dockModelText">Gemini 2.5 Flash</span>
+                <span id="dockModelText">Gemini 1.5 Flash</span>
             </div>
 
             <!-- Input Box -->
@@ -926,7 +990,7 @@ print(f"नमस्ते {name}, RB Agent code runner executed live!")
         let currentMaster = "Ram Binay Pandit";
         let isVoiceMode = false;
         let speechRec = null;
-        let currentModel = "gemini-2.5-flash";
+        let currentModel = "gemini-1.5-flash";
 
         window.addEventListener('DOMContentLoaded', () => {
             initSystemOS();
@@ -1012,7 +1076,7 @@ print(f"नमस्ते {name}, RB Agent code runner executed live!")
                 const res = await fetch('/api/chat', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ text, is_voice: isVoiceMode })
+                    body: JSON.stringify({ text, is_voice: isVoiceMode, model: currentModel })
                 });
                 const d = await res.json();
                 const reply = d.response || "Task completed.";
@@ -1113,12 +1177,12 @@ print(f"नमस्ते {name}, RB Agent code runner executed live!")
 
         // Model Selector Cycle
         function cycleGeminiModel() {
-            if (currentModel === "gemini-2.5-flash") {
-                currentModel = "gemini-2.5-pro";
-                document.getElementById('dockModelText').innerText = "Gemini 2.5 Pro";
+            if (currentModel === "gemini-1.5-flash") {
+                currentModel = "gemini-2.0-flash";
+                document.getElementById('dockModelText').innerText = "Gemini 2.0 Flash";
             } else {
-                currentModel = "gemini-2.5-flash";
-                document.getElementById('dockModelText').innerText = "Gemini 2.5 Flash";
+                currentModel = "gemini-1.5-flash";
+                document.getElementById('dockModelText').innerText = "Gemini 1.5 Flash";
             }
             setSubtitle(`Active Model: ${currentModel}`);
         }

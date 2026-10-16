@@ -165,6 +165,7 @@ class RBServer:
                     text = payload.get("text", "")
                     image_b64 = payload.get("image")
                     is_voice = payload.get("is_voice", False)
+                    model_name = payload.get("model")
                     img_bytes = base64.b64decode(image_b64) if image_b64 else None
 
                     # Autonomous Intent Router (Memory, Automation, Web Research, Coding)
@@ -188,7 +189,7 @@ class RBServer:
                         return
 
                     # Normal Gemini / Multimodal Processing with active dynamic skills
-                    res = assistant_ref.process_input(raw_text=text, image_bytes=img_bytes, is_voice=is_voice)
+                    res = assistant_ref.process_input(raw_text=text, image_bytes=img_bytes, is_voice=is_voice, model=model_name)
                     reply_text = res.get("response", "")
                     tool_calls = res.get("tool_calls", [])
 

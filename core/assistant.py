@@ -39,10 +39,15 @@ class RBAssistant:
         self,
         raw_text: Optional[str] = None,
         image_bytes: Optional[bytes] = None,
-        is_voice: bool = False
+        is_voice: bool = False,
+        model: Optional[str] = None
     ) -> Dict[str, Any]:
         """Main entry point for processing any query (Voice, Text, Vision)."""
         text = raw_text or ""
+
+        # Update model if provided
+        if model:
+            self.gemini.set_model(model)
 
         # If it was a voice trigger, verify wake word or process direct command
         if is_voice:

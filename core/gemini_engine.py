@@ -135,14 +135,29 @@ GEMINI_TOOLS = [
 class GeminiEngine:
     """Multimodal Gemini Engine with native Function Calling."""
 
-    def __init__(self, api_key: str, model: str = "gemini-2.5-flash"):
+    def __init__(self, api_key: str, model: str = "gemini-1.5-flash"):
         self.api_key = api_key
-        self.model = model
+        self.model = self._normalize_model(model)
         self.system_instruction = RB_MASTER_SYSTEM_PROMPT
         self.history: List[Dict[str, Any]] = []
 
+    def _normalize_model(self, model_name: str) -> str:
+        """Ensures active Google AI Studio supported model name."""
+        if not model_name or "2.5" in model_name:
+            return "gemini-1.5-flash"
+        if "1.5-flash" in model_name:
+            return "gemini-1.5-flash"
+        if "1.5-pro" in model_name:
+            return "gemini-1.5-pro"
+        if "2.0-flash" in model_name:
+            return "gemini-2.0-flash"
+        return model_name
+
     def set_api_key(self, api_key: str):
         self.api_key = api_key
+
+    def set_model(self, model_name: str):
+        self.model = self._normalize_model(model_name)
 
     def _execute_tool(self, name: str, args: Dict[str, Any]) -> Any:
         """Dispatches Gemini tool calls to the automation layer."""
@@ -234,6 +249,10 @@ class GeminiEngine:
             with urllib.request.urlopen(req, timeout=30) as resp:
                 data = json.loads(resp.read().decode("utf-8"))
         except urllib.error.HTTPError as e:
+            if e.code == 404 and self.model != "gemini-1.5-flash":
+                print(f"[GeminiEngine] Model '{self.model}' returned 404. Auto-recovering with 'gemini-1.5-flash'...")
+                self.model = "gemini-1.5-flash"
+                return self._run_model_turn(depth=depth)
             err_body = e.read().decode("utf-8")
             return {"text": f"Gemini API Error ({e.code}): {err_body}", "tool_calls": []}
         except Exception as e:
