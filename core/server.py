@@ -46,12 +46,12 @@ class RBServer:
                     self._send_json(status)
                 elif self.path == "/api/battery":
                     self._send_json(automation.get_battery_status())
-                elif self.path == "/":
-                    self._send_json({
-                        "name": "RB.AI Voice & Multimodal Assistant Server",
-                        "status": "online",
-                        "endpoints": ["/api/status", "/api/chat", "/api/action", "/api/battery"]
-                    })
+                elif self.path == "/" or self.path == "/app":
+                    from core.web_ui import WEB_HTML
+                    self.send_response(200)
+                    self.send_header("Content-Type", "text/html; charset=utf-8")
+                    self.end_headers()
+                    self.wfile.write(WEB_HTML.encode("utf-8"))
                 else:
                     self._send_json({"error": "Not Found"}, status=404)
 
