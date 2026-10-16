@@ -1,12 +1,24 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../services/rbai_service.dart';
-import 'sub_agents_workspace.dart';
 
-class SidebarDrawer extends StatelessWidget {
+class SidebarDrawer extends StatefulWidget {
   final Function(String route) onNavigate;
 
   const SidebarDrawer({Key? key, required this.onNavigate}) : super(key: key);
+
+  @override
+  State<SidebarDrawer> createState() => _SidebarDrawerState();
+}
+
+class _SidebarDrawerState extends State<SidebarDrawer> {
+  final TextEditingController _searchCtrl = TextEditingController();
+
+  @override
+  void dispose() {
+    _searchCtrl.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -16,28 +28,28 @@ class SidebarDrawer extends StatelessWidget {
         : 'RB';
 
     return Drawer(
-      backgroundColor: Colors.white,
+      backgroundColor: const Color(0xFF0D1322),
       child: Column(
         children: [
           // User Profile Header
           Container(
-            padding: const EdgeInsets.fromLTRB(20, 50, 20, 20),
-            color: const Color(0xFFF8FAFC),
+            padding: const EdgeInsets.fromLTRB(18, 48, 18, 16),
+            color: const Color(0xFF131B2E),
             child: Row(
               children: [
                 CircleAvatar(
-                  radius: 26,
-                  backgroundColor: const Color(0xFF1E3A8A),
+                  radius: 20,
+                  backgroundColor: const Color(0xFF0284C7),
                   child: Text(
                     userInitials,
                     style: const TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.w800,
-                      fontSize: 16,
+                      fontSize: 13,
                     ),
                   ),
                 ),
-                const SizedBox(width: 14),
+                const SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -47,19 +59,25 @@ class SidebarDrawer extends StatelessWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
-                          color: Color(0xFF0F172A),
+                          color: Colors.white,
                           fontWeight: FontWeight.w800,
-                          fontSize: 15,
+                          fontSize: 14,
                         ),
                       ),
                       const SizedBox(height: 2),
-                      const Text(
-                        "Master User • Autonomous OS",
-                        style: TextStyle(
-                          color: Color(0xFF64748B),
-                          fontSize: 11,
-                          fontWeight: FontWeight.w500,
-                        ),
+                      const Row(
+                        children: [
+                          Icon(Icons.circle, color: Color(0xFF10B981), size: 7),
+                          SizedBox(width: 4),
+                          Text(
+                            "Active OS Node",
+                            style: TextStyle(
+                              color: Color(0xFF94A3B8),
+                              fontSize: 10,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
@@ -67,57 +85,98 @@ class SidebarDrawer extends StatelessWidget {
               ],
             ),
           ),
-          const Divider(height: 1, color: Color(0xFFE2E8F0)),
+          const Divider(height: 1, color: Colors.white10),
 
-          // Navigation Menu Items
+          // Strictly the 8 Unified Navigation Items
           Expanded(
             child: ListView(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
               children: [
-                _buildNavItem(context, Icons.home, "Home", () {
+                _buildNavItem(Icons.home, "Home", () {
                   Navigator.pop(context);
-                  onNavigate("home");
+                  widget.onNavigate("home");
                 }, isActive: true),
-                _buildNavItem(context, Icons.hub, "5 Sub-Agents Workspace", () {
+                _buildNavItem(Icons.public, "Web Preview", () {
                   Navigator.pop(context);
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const SubAgentsWorkspaceScreen()),
-                  );
+                  widget.onNavigate("web");
                 }),
-                _buildNavItem(context, Icons.language, "Web Research", () {
+                _buildNavItem(Icons.code, "Code Preview", () {
                   Navigator.pop(context);
-                  onNavigate("web");
+                  widget.onNavigate("code");
                 }),
-                _buildNavItem(context, Icons.code, "Code & GitHub", () {
+                _buildNavItem(Icons.folder_open, "File Preview", () {
                   Navigator.pop(context);
-                  onNavigate("code");
+                  widget.onNavigate("files");
                 }),
-                _buildNavItem(context, Icons.folder, "Files & Storage", () {
+                _buildNavItem(Icons.tune, "Settings", () {
                   Navigator.pop(context);
-                  onNavigate("files");
+                  widget.onNavigate("settings");
                 }),
-                _buildNavItem(context, Icons.note_alt, "Persistent Data Notes", () {
+                _buildNavItem(Icons.view_in_ar, "Projects", () {
                   Navigator.pop(context);
-                  onNavigate("notes");
+                  widget.onNavigate("projects");
                 }),
-                _buildNavItem(context, Icons.chat, "Chats", () {
+                _buildNavItem(Icons.extension, "Skill Add", () {
                   Navigator.pop(context);
-                  onNavigate("chats");
+                  widget.onNavigate("skills");
                 }),
-                _buildNavItem(context, Icons.auto_awesome_mosaic, "Projects", () {
+                _buildNavItem(Icons.chat_bubble_outline, "Chats", () {
                   Navigator.pop(context);
-                  onNavigate("projects");
+                  widget.onNavigate("chats");
                 }),
-                _buildNavItem(context, Icons.add_circle, "Skill Add", () {
-                  Navigator.pop(context);
-                  onNavigate("skills");
-                }),
-                const Divider(height: 20, color: Color(0xFFE2E8F0)),
-                _buildNavItem(context, Icons.settings, "Settings & Accents", () {
-                  Navigator.pop(context);
-                  onNavigate("settings");
-                }),
+              ],
+            ),
+          ),
+
+          // Chats History Search Bar & Prominent "+ New Chat" Button
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: const BoxDecoration(
+              border: Border(top: BorderSide(color: Colors.white10)),
+            ),
+            child: Column(
+              children: [
+                TextField(
+                  controller: _searchCtrl,
+                  style: const TextStyle(color: Colors.white, fontSize: 12),
+                  decoration: InputDecoration(
+                    hintText: "Search chat history...",
+                    hintStyle: const TextStyle(color: Colors.white38, fontSize: 11),
+                    prefixIcon: const Icon(Icons.search, size: 16, color: Colors.white38),
+                    filled: true,
+                    fillColor: const Color(0xFF131B2E),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: const BorderSide(color: Colors.white10),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: const BorderSide(color: Colors.white10),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF0284C7),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 10),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                    icon: const Icon(Icons.add, size: 16),
+                    label: const Text(
+                      "New chat",
+                      style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+                    ),
+                    onPressed: () {
+                      Navigator.pop(context);
+                      widget.onNavigate("new_chat");
+                    },
+                  ),
+                ),
               ],
             ),
           ),
@@ -127,35 +186,34 @@ class SidebarDrawer extends StatelessWidget {
   }
 
   Widget _buildNavItem(
-    BuildContext context,
     IconData icon,
     String title,
     VoidCallback onTap, {
     bool isActive = false,
   }) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 4),
+      margin: const EdgeInsets.only(bottom: 2),
       decoration: BoxDecoration(
-        color: isActive ? const Color(0xFFEEF2F6) : Colors.transparent,
-        borderRadius: BorderRadius.circular(10),
+        color: isActive ? Colors.white.withOpacity(0.06) : Colors.transparent,
+        borderRadius: BorderRadius.circular(8),
       ),
       child: ListTile(
         leading: Icon(
           icon,
-          color: isActive ? const Color(0xFF0077FE) : const Color(0xFF475569),
-          size: 20,
+          color: isActive ? const Color(0xFF00E5FF) : const Color(0xFF94A3B8),
+          size: 19,
         ),
         title: Text(
           title,
           style: TextStyle(
-            color: isActive ? const Color(0xFF0077FE) : const Color(0xFF1E293B),
-            fontWeight: isActive ? FontWeight.w700 : FontWeight.w600,
+            color: isActive ? const Color(0xFF00E5FF) : const Color(0xFFF8FAFC),
+            fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
             fontSize: 13,
           ),
         ),
         onTap: onTap,
         dense: true,
-        visualDensity: const VisualDensity(vertical: -1),
+        visualDensity: const VisualDensity(vertical: -2),
       ),
     );
   }

@@ -8,7 +8,7 @@ class HudReactorButton extends StatefulWidget {
   const HudReactorButton({
     Key? key,
     required this.onTap,
-    this.size = 180.0,
+    this.size = 110.0,
   }) : super(key: key);
 
   @override

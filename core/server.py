@@ -136,24 +136,26 @@ class RBServer:
                     is_voice = payload.get("is_voice", False)
                     img_bytes = base64.b64decode(image_b64) if image_b64 else None
 
-                    # Check Memory & Notes Intent first ("यह चीज़ सेव कर लो")
-                    memory_intent = sub_agents.process_memory_intent(text)
-                    if memory_intent.get("is_memory_intent"):
-                        reply = memory_intent.get("message", "नोट सुरक्षित कर लिया गया है।")
-                        db.add_chat(sender="user", message=text, agent_type="memory")
-                        db.add_chat(sender="assistant", message=reply, agent_type="memory")
+                    # Autonomous Intent Router (Memory, Automation, Web Research, Coding)
+                    routed_result = sub_agents.route_and_process_intent(text)
+                    if routed_result and routed_result.get("routed"):
+                        reply = routed_result.get("response", "Task completed.")
+                        agent_name = routed_result.get("agent", "RB Agent")
+                        agent_tag = routed_result.get("tag", "general")
+                        db.add_chat(sender="user", message=text, agent_type=agent_tag)
+                        db.add_chat(sender="assistant", message=reply, agent_type=agent_tag)
                         if is_voice and assistant_ref.config.ENABLE_TTS:
                             assistant_ref.audio.speak(reply)
                         self._send_json({
                             "state": "IDLE",
                             "response": reply,
-                            "agent": "Memory & Notes Agent",
-                            "memory_result": memory_intent,
+                            "agent": agent_name,
+                            "tag": agent_tag,
                             "tool_calls": []
                         })
                         return
 
-                    # Normal Gemini / Assistant Processing
+                    # Normal Gemini / Multimodal Processing
                     res = assistant_ref.process_input(raw_text=text, image_bytes=img_bytes, is_voice=is_voice)
                     
                     # Persist in SQLite

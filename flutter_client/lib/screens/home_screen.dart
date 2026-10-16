@@ -330,9 +330,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
             // Central JARVIS Arc Reactor HUD Button
             Padding(
-              padding: const EdgeInsets.symmetric(vertical: 12),
+              padding: const EdgeInsets.symmetric(vertical: 8),
               child: HudReactorButton(
-                size: 160,
+                size: 110,
                 onTap: _openSubAgentsWorkspace,
               ),
             ),

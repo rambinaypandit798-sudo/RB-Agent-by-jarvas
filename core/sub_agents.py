@@ -337,5 +337,154 @@ class SubAgentsEngine:
 
         return {"success": False, "error": f"Unknown Coding & GitHub action: {action}"}
 
+    # =========================================================================
+    # AUTONOMOUS INTENT ROUTING (CORE ORCHESTRATOR)
+    # =========================================================================
+    def route_and_process_intent(self, text: str) -> Optional[Dict[str, Any]]:
+        """
+        Intelligently parses user input (typed or spoken) and routes to the appropriate sub-agent:
+        - Memory & Notes: Save / Remember / Note down
+        - Hardware & Automation: Torch, Battery, Vibrate, Call Announce
+        - Research & Web: Live web searches & queries
+        - Coding & GitHub: Repositories and script execution
+        Returns clean, polished user responses hiding raw hardware/debug traces.
+        """
+        raw = text.strip()
+        lower = raw.lower()
+        if not lower:
+            return None
+
+        user_name = db.get_setting("user_name", "Ram Binay kumar Pandit")
+
+        # 1. Memory & Notes Intent
+        mem_triggers = [
+            "यह चीज़ सेव कर लो", "यह चीज सेव कर लो", "इसे सेव कर लो", "सेव कर लो",
+            "नोट कर लो", "याद रखना", "याद रखो",
+            "remember this", "save note", "save this", "store this", "take a note",
+            "note down", "add to notes", "create note"
+        ]
+        if any(trig in lower for trig in mem_triggers):
+            res = self.process_memory_intent(raw)
+            return {
+                "routed": True,
+                "agent": "Memory & Notes Agent",
+                "tag": "memory",
+                "response": res.get("message", "नोट सफलतापूर्वक सुरक्षित कर लिया गया है।")
+            }
+
+        # Notes Retrieval
+        if any(trig in lower for trig in ["मेरे नोट्स", "नोट्स दिखाओ", "show my notes", "get notes", "list notes"]):
+            notes = db.get_notes()
+            if not notes:
+                reply = f"{user_name}, वर्तमान में कोई सुरक्षित नोट मौजूद नहीं है।"
+            else:
+                formatted = [f"• #{n['id']} {n['title']}: {n['content']}" for n in notes[:5]]
+                reply = f"📝 **आपके सुरक्षित नोट्स ({len(notes)} कुल):**\n" + "\n".join(formatted)
+            return {
+                "routed": True,
+                "agent": "Memory & Notes Agent",
+                "tag": "memory",
+                "response": reply
+            }
+
+        # 2. Hardware & Automation Intent
+        # Torch Toggle
+        if any(w in lower for w in ["torch on", "turn on torch", "light on", "turn on flashlight", "flashlight on", "लाइट जलाओ", "टॉर्च चालू"]):
+            automation.set_torch(True)
+            return {
+                "routed": True,
+                "agent": "Automation Agent",
+                "tag": "automation",
+                "response": "🔦 टॉर्च चालू कर दी गई है (Flashlight turned ON)."
+            }
+        if any(w in lower for w in ["torch off", "turn off torch", "light off", "flashlight off", "लाइट बंद", "टॉर्च बंद"]):
+            automation.set_torch(False)
+            return {
+                "routed": True,
+                "agent": "Automation Agent",
+                "tag": "automation",
+                "response": "🔦 टॉर्च बंद कर दी गई है (Flashlight turned OFF)."
+            }
+
+        # Battery Status
+        if any(w in lower for w in ["battery", "battery status", "बैटरी", "कितना चार्ज है", "charging status"]):
+            batt = automation.get_battery_status()
+            if batt.get("available"):
+                pct = batt.get("percentage", 85)
+                status = batt.get("status", "Discharging")
+                temp = batt.get("temperature", "Normal")
+                reply = f"🔋 **बैटरी स्थिति:** {pct}% ({status}) | तापमान: {temp}°C"
+            else:
+                reply = f"🔋 **बैटरी स्थिति:** डिवाइस सामान्य रूप से एक्टिव है।"
+            return {
+                "routed": True,
+                "agent": "Automation Agent",
+                "tag": "automation",
+                "response": reply
+            }
+
+        # Device Vibration
+        if any(w in lower for w in ["vibrate", "वाइब्रेट", "vibrate phone", "haptic test"]):
+            automation.vibrate(300)
+            return {
+                "routed": True,
+                "agent": "Automation Agent",
+                "tag": "automation",
+                "response": "📳 हेप्टिक वाइब्रेशन सफलतापूर्वक ट्रिगर हुआ।"
+            }
+
+        # Call Announcement
+        if any(w in lower for w in ["call announce", "call announcement", "कॉल अनाउंस", "फोन आया"]):
+            # Extract caller name if present
+            caller = "Ram Pandit"
+            match = re.search(r"(?:from|of|का फोन|कॉल)\s+([a-zA-Z\u0900-\u097F\s]+)", raw, re.IGNORECASE)
+            if match and match.group(1).strip():
+                caller = match.group(1).strip()
+            self.execute_device_automation("call_announcement", {"caller_name": caller})
+            return {
+                "routed": True,
+                "agent": "Automation Agent",
+                "tag": "automation",
+                "response": f"📞 कॉल अनाउंसमेंट सक्रिय: \"{user_name}, {caller} का फोन आया है\""
+            }
+
+        # 3. Research & Web Intent
+        web_match = re.match(r"^(?:search(?:\s+web)?|google|look up|खोजो|सर्च करो)\s+(.+)", raw, re.IGNORECASE)
+        if web_match:
+            query = web_match.group(1).strip()
+            search_res = self.run_web_search(query, max_results=3)
+            items = search_res.get("results", [])
+            if items:
+                snippets = [f"• **{it['title']}**: {it['snippet'][:180]}..." for it in items[:3]]
+                reply = f"🌐 **वेब सर्च परिणाम ({query}):**\n\n" + "\n\n".join(snippets)
+            else:
+                reply = f"🌐 वेब पर '{query}' के लिए लाइव सर्च पूरा हुआ।"
+            return {
+                "routed": True,
+                "agent": "Research & Web Agent",
+                "tag": "research",
+                "response": reply
+            }
+
+        # 4. Coding & GitHub Intent
+        gh_match = re.search(r"(?:github\s+repos?|fetch\s+repos?|repos?\s+of)\s+([a-zA-Z0-9_\-]+)", raw, re.IGNORECASE)
+        if gh_match:
+            target_user = gh_match.group(1).strip()
+            gh_res = self.execute_code_or_github("fetch_github_repos", {"username": target_user})
+            repos = gh_res.get("repositories", [])
+            if repos:
+                lines = [f"• **{r['name']}** ({r['language']}): ⭐ {r['stars']} | [View]({r['html_url']})" for r in repos[:5]]
+                reply = f"💻 **GitHub रिपॉजिटरीज़ ({target_user}):**\n" + "\n".join(lines)
+            else:
+                reply = f"💻 GitHub पर '{target_user}' के लिए कोई सार्वजनिक रिपॉजिटरी नहीं मिली या दर सीमा पार हो गई।"
+            return {
+                "routed": True,
+                "agent": "Coding & GitHub Agent",
+                "tag": "coding",
+                "response": reply
+            }
+
+        return None
+
 # Global singleton
 sub_agents = SubAgentsEngine()
