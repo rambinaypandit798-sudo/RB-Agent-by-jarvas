@@ -14,6 +14,8 @@ from core.assistant import RBAssistant
 from core.config import load_config
 from core.automation import automation
 from core.server import RBServer
+from core.sub_agents import sub_agents
+from core.database import db
 
 def banner():
     print("""
@@ -41,6 +43,17 @@ def interactive_chat(assistant: RBAssistant):
             if user_input.lower() in ("exit", "quit"):
                 print("Goodbye!")
                 break
+
+            # Check Autonomous Sub-Agent Intent Router first
+            routed = sub_agents.route_and_process_intent(user_input)
+            if routed and routed.get("routed"):
+                agent_name = routed.get("agent", "RB Agent")
+                response_text = routed.get("response", "")
+                db.add_chat(sender="user", message=user_input, agent_type=routed.get("tag", "general"))
+                db.add_chat(sender="assistant", message=response_text, agent_type=routed.get("tag", "general"))
+                print(f"\033[1;36m[{agent_name} Executed]\033[0m")
+                print(f"\033[1;32mRB.AI >\033[0m {response_text}\n")
+                continue
 
             print("\033[1;33m[RB.AI is thinking...]\033[0m")
             res = assistant.process_input(raw_text=user_input, is_voice=False)

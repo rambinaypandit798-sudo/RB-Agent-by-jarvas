@@ -10,7 +10,8 @@ import base64
 import os
 from typing import List, Dict, Any, Optional
 from core.automation import automation
-from core.master_prompt import RB_MASTER_SYSTEM_PROMPT
+from core.master_prompt import RB_MASTER_SYSTEM_PROMPT, get_master_prompt
+from core.database import db
 
 GEMINI_TOOLS = [
     {
@@ -205,10 +206,15 @@ class GeminiEngine:
 
         endpoint = f"https://generativelanguage.googleapis.com/v1beta/models/{self.model}:generateContent?key={self.api_key}"
 
+        # Dynamically inject current user name and learned skills
+        active_user = db.get_setting("user_name", "Ram Binay Pandit")
+        skills_addon = db.get_active_skills_prompt()
+        dynamic_instruction = get_master_prompt(user_name=active_user, skills_prompt=skills_addon)
+
         payload = {
             "contents": self.history,
             "system_instruction": {
-                "parts": [{"text": self.system_instruction}]
+                "parts": [{"text": dynamic_instruction}]
             },
             "tools": [{"function_declarations": GEMINI_TOOLS}],
             "generation_config": {

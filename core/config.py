@@ -15,6 +15,10 @@ class Config:
     DEVICE_NAME: str = os.getenv("DEVICE_NAME", "Termux-Android")
     ENABLE_TTS: bool = os.getenv("ENABLE_TTS", "true").lower() in ("true", "1", "yes")
     ENABLE_NOTIFICATIONS: bool = os.getenv("ENABLE_NOTIFICATIONS", "true").lower() in ("true", "1", "yes")
+    SUPABASE_URL: str = os.getenv("SUPABASE_URL", "")
+    SUPABASE_KEY: str = os.getenv("SUPABASE_KEY", "")
+    TELEGRAM_BOT_TOKEN: str = os.getenv("TELEGRAM_BOT_TOKEN", "")
+    GITHUB_PAT: str = os.getenv("GITHUB_PAT", "")
 
 def load_config() -> Config:
     # Attempt to load .env if present
@@ -38,5 +42,9 @@ def load_config() -> Config:
         PORT=int(os.getenv("RB_PORT", "8765")),
         DEVICE_NAME=os.getenv("DEVICE_NAME", "Termux-Android"),
         ENABLE_TTS=os.getenv("ENABLE_TTS", "true").lower() in ("true", "1", "yes"),
-        ENABLE_NOTIFICATIONS=os.getenv("ENABLE_NOTIFICATIONS", "true").lower() in ("true", "1", "yes")
+        ENABLE_NOTIFICATIONS=os.getenv("ENABLE_NOTIFICATIONS", "true").lower() in ("true", "1", "yes"),
+        SUPABASE_URL=os.getenv("SUPABASE_URL", ""),
+        SUPABASE_KEY=os.getenv("SUPABASE_KEY", ""),
+        TELEGRAM_BOT_TOKEN=os.getenv("TELEGRAM_BOT_TOKEN", ""),
+        GITHUB_PAT=os.getenv("GITHUB_PAT", "")
     )

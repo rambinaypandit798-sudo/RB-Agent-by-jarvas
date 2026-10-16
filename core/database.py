@@ -1,7 +1,8 @@
 """
 RB.AI - Production Persistent Database Engine
 Uses SQLite3 for zero-dependency, bulletproof on-device persistence of
-User Profiles, Notes/Memory, Chat Histories, and Integration Configs.
+User Profiles, Notes/Memory, Chat Histories, Integration Configs, and Trained Skills,
+with live auto-provisioning and synchronization to Supabase.
 """
 
 import os
@@ -9,6 +10,7 @@ import sqlite3
 import json
 from datetime import datetime
 from typing import Dict, Any, List, Optional
+from core.supabase_client import supabase
 
 DB_DIR = os.path.expanduser("~/rb_ai/data")
 DB_PATH = os.path.join(DB_DIR, "rb_agent.db")
@@ -18,6 +20,7 @@ class Database:
         self.db_path = db_path
         os.makedirs(os.path.dirname(self.db_path), exist_ok=True)
         self._init_db()
+        self._init_supabase_from_storage()
 
     def _get_connection(self) -> sqlite3.Connection:
         conn = sqlite3.connect(self.db_path)
@@ -60,7 +63,7 @@ class Database:
                 )
             """)
 
-            # 4. Integrations Config (Telegram, GitHub, WhatsApp)
+            # 4. Integrations Config (Telegram, GitHub, WhatsApp, Supabase, Gemini)
             cursor.execute("""
                 CREATE TABLE IF NOT EXISTS integrations (
                     service TEXT PRIMARY KEY,
@@ -68,10 +71,24 @@ class Database:
                     updated_at TEXT NOT NULL
                 )
             """)
+
+            # 5. Agent Skills & Self-Training Capabilities Store
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS agent_skills (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    name TEXT UNIQUE NOT NULL,
+                    description TEXT DEFAULT '',
+                    system_prompt TEXT NOT NULL,
+                    examples TEXT DEFAULT '',
+                    enabled INTEGER DEFAULT 1,
+                    created_at TEXT NOT NULL,
+                    updated_at TEXT NOT NULL
+                )
+            """)
             
             conn.commit()
 
-        # Seed default user name if missing
+        # Seed default user name and settings
         self.init_default_settings()
 
     def init_default_settings(self):
@@ -90,6 +107,14 @@ class Database:
             self.set_setting("call_announcement_enabled", "true")
         if not self.get_setting("theme_mode"):
             self.set_setting("theme_mode", "light")
+
+    def _init_supabase_from_storage(self):
+        """Loads saved Supabase credentials from local storage / env into client."""
+        cfg = self.get_integration("supabase")
+        url = cfg.get("url") or os.getenv("SUPABASE_URL", "")
+        key = cfg.get("key") or os.getenv("SUPABASE_KEY", "")
+        if url and key:
+            supabase.update_credentials(url, key)
 
     # --- Settings Operations ---
     def get_setting(self, key: str, default: Optional[str] = None) -> Optional[str]:
@@ -110,6 +135,13 @@ class Database:
             """, (key, str(value), now))
             conn.commit()
 
+        # Auto-sync to Supabase if configured
+        if supabase.is_configured():
+            try:
+                supabase.upsert_records("user_settings", [{"key": key, "value": str(value), "updated_at": now}], on_conflict="key")
+            except Exception:
+                pass
+
     def get_all_settings(self) -> Dict[str, str]:
         with self._get_connection() as conn:
             cursor = conn.cursor()
@@ -126,7 +158,22 @@ class Database:
                 VALUES (?, ?, ?, ?)
             """, (title, content, tags, now))
             conn.commit()
-            return cursor.lastrowid
+            note_id = cursor.lastrowid
+
+        # Live sync to Supabase if connected
+        if supabase.is_configured():
+            try:
+                supabase.upsert_records("notes_memory", [{
+                    "id": note_id,
+                    "title": title,
+                    "content": content,
+                    "tags": tags,
+                    "created_at": now
+                }])
+            except Exception:
+                pass
+
+        return note_id
 
     def get_notes(self, search: Optional[str] = None) -> List[Dict[str, Any]]:
         with self._get_connection() as conn:
@@ -160,7 +207,23 @@ class Database:
                 VALUES (?, ?, ?, ?, ?)
             """, (sender, message, agent_type, tc_json, now))
             conn.commit()
-            return cursor.lastrowid
+            chat_id = cursor.lastrowid
+
+        # Live sync to Supabase if connected
+        if supabase.is_configured():
+            try:
+                supabase.upsert_records("chat_history", [{
+                    "id": chat_id,
+                    "sender": sender,
+                    "message": message,
+                    "agent_type": agent_type,
+                    "tool_calls": tc_json,
+                    "timestamp": now
+                }])
+            except Exception:
+                pass
+
+        return chat_id
 
     def get_chats(self, limit: int = 50) -> List[Dict[str, Any]]:
         with self._get_connection() as conn:
@@ -197,6 +260,12 @@ class Database:
             """, (service, json.dumps(config), now))
             conn.commit()
 
+        if service == "supabase":
+            url = config.get("url", "")
+            key = config.get("key", "")
+            if url and key:
+                supabase.update_credentials(url, key)
+
     def get_integration(self, service: str) -> Dict[str, Any]:
         with self._get_connection() as conn:
             cursor = conn.cursor()
@@ -208,6 +277,125 @@ class Database:
                 except Exception:
                     return {}
             return {}
+
+    # --- Agent Skills & Self-Training Operations ---
+    def add_skill(self, name: str, system_prompt: str, description: str = "", examples: str = "", enabled: int = 1) -> int:
+        now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        with self._get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                INSERT INTO agent_skills (name, description, system_prompt, examples, enabled, created_at, updated_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT(name) DO UPDATE SET
+                    description = excluded.description,
+                    system_prompt = excluded.system_prompt,
+                    examples = excluded.examples,
+                    enabled = excluded.enabled,
+                    updated_at = excluded.updated_at
+            """, (name.strip(), description.strip(), system_prompt.strip(), examples.strip(), enabled, now, now))
+            conn.commit()
+            skill_id = cursor.lastrowid
+
+        if supabase.is_configured():
+            try:
+                supabase.upsert_records("agent_skills", [{
+                    "name": name.strip(),
+                    "description": description.strip(),
+                    "system_prompt": system_prompt.strip(),
+                    "examples": examples.strip(),
+                    "enabled": bool(enabled),
+                    "created_at": now,
+                    "updated_at": now
+                }], on_conflict="name")
+            except Exception:
+                pass
+
+        return skill_id
+
+    def get_skills(self, enabled_only: bool = False) -> List[Dict[str, Any]]:
+        with self._get_connection() as conn:
+            cursor = conn.cursor()
+            if enabled_only:
+                cursor.execute("SELECT * FROM agent_skills WHERE enabled = 1 ORDER BY id DESC")
+            else:
+                cursor.execute("SELECT * FROM agent_skills ORDER BY id DESC")
+            return [dict(row) for row in cursor.fetchall()]
+
+    def delete_skill(self, skill_id: int) -> bool:
+        with self._get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("DELETE FROM agent_skills WHERE id = ?", (skill_id,))
+            conn.commit()
+            return cursor.rowcount > 0
+
+    def toggle_skill(self, skill_id: int, enabled: int) -> bool:
+        now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        with self._get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("UPDATE agent_skills SET enabled = ?, updated_at = ? WHERE id = ?", (enabled, now, skill_id))
+            conn.commit()
+            return cursor.rowcount > 0
+
+    def get_active_skills_prompt(self) -> str:
+        """
+        Compiles all active learned skills into a system instruction block
+        to dynamically extend the AI agent's master prompt on the fly.
+        """
+        skills = self.get_skills(enabled_only=True)
+        if not skills:
+            return ""
+
+        blocks = []
+        for s in skills:
+            block = f"#### Skill: {s['name']}\n- Description/Trigger: {s['description']}\n- Directives: {s['system_prompt']}"
+            if s.get("examples"):
+                block += f"\n- Examples/Templates: {s['examples']}"
+            blocks.append(block)
+
+        return (
+            "\n\n### 10. USER-TRAINED SPECIALIZED SKILLS (DYNAMICALLY LEARNED)\n"
+            "Ram Binay Pandit has trained you with the following specialized skills. "
+            "Adhere strictly to their directives whenever the relevant domain or topic arises:\n\n"
+            + "\n\n".join(blocks)
+        )
+
+    def sync_all_to_supabase(self) -> Dict[str, Any]:
+        """
+        Syncs local SQLite tables to Supabase.
+        """
+        if not supabase.is_configured():
+            return {"success": False, "error": "Supabase is not configured."}
+
+        status = supabase.test_connection()
+        if not status.get("success"):
+            return {"success": False, "error": status.get("error", "Handshake failed")}
+
+        results = {}
+        # 1. user_settings
+        with self._get_connection() as conn:
+            c = conn.cursor()
+            c.execute("SELECT key, value, updated_at FROM user_settings")
+            settings_rows = [dict(r) for r in c.fetchall()]
+            if settings_rows:
+                results["user_settings"] = supabase.upsert_records("user_settings", settings_rows, on_conflict="key")
+
+            # 2. notes_memory
+            c.execute("SELECT id, title, content, tags, created_at FROM notes_memory")
+            notes_rows = [dict(r) for r in c.fetchall()]
+            if notes_rows:
+                results["notes_memory"] = supabase.upsert_records("notes_memory", notes_rows, on_conflict="id")
+
+            # 3. agent_skills
+            c.execute("SELECT name, description, system_prompt, examples, enabled, created_at, updated_at FROM agent_skills")
+            skills_rows = [dict(r) for r in c.fetchall()]
+            if skills_rows:
+                results["agent_skills"] = supabase.upsert_records("agent_skills", skills_rows, on_conflict="name")
+
+        return {
+            "success": True,
+            "message": "SQLite database synced to Supabase successfully.",
+            "results": results
+        }
 
 # Global database instance
 db = Database()

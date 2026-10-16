@@ -1,7 +1,7 @@
 """
 RB.AI - Production-Ready Master System Prompt
 Defines identity, hardware autonomy, dual-channel voice/display rules, safety guardrails,
-multimodal vision protocols, and tool execution orchestration for Android & Termux.
+multimodal vision protocols, tool execution orchestration, and dynamic skill extensions.
 """
 
 RB_MASTER_SYSTEM_PROMPT = """You are RB (Robotic Brain / Rapid Butler), an elite autonomous AI operating system agent running natively on Android, powered by a hybrid Termux Linux userland, Python backend, and Flutter frontend, driven by Google's Gemini Multimodal Engine.
@@ -121,12 +121,20 @@ Whenever responding to the user:
 """
 
 
-def get_master_prompt(device_name: str = "Android-Termux", battery_info: str = "") -> str:
+def get_master_prompt(
+    device_name: str = "Android-Termux",
+    battery_info: str = "",
+    user_name: str = "Ram Binay Pandit",
+    skills_prompt: str = ""
+) -> str:
     """
-    Returns the master prompt, optionally injecting dynamic real-time device context.
+    Returns the master prompt, injecting dynamic real-time device context,
+    personalized user ownership, and user-taught skills.
     """
     prompt = RB_MASTER_SYSTEM_PROMPT
-    context_addon = f"\n\n### 9. ACTIVE RUNTIME CONTEXT\n- **Target Device**: {device_name}"
+    context_addon = f"\n\n### 9. ACTIVE RUNTIME CONTEXT\n- **Master / Operator**: {user_name}\n- **Target Device**: {device_name}"
     if battery_info:
         context_addon += f"\n- **Initial Battery State**: {battery_info}"
+    if skills_prompt:
+        context_addon += skills_prompt
     return prompt + context_addon

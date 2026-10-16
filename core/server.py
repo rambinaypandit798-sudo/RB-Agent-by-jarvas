@@ -1,18 +1,21 @@
 """
 RB.AI - Production Server & API Gateway
 Serves REST endpoints for Flutter client, Sub-Agents, Database,
-Telegram, WhatsApp, GitHub, and on-device Web UI.
+Telegram, WhatsApp, GitHub, Supabase, Skills Training, and on-device Web UI.
 """
 
 import json
 import base64
 import urllib.parse
+import urllib.request
+import urllib.error
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from typing import Dict, Any
 from core.assistant import RBAssistant
 from core.automation import automation
 from core.database import db
 from core.sub_agents import sub_agents
+from core.supabase_client import supabase
 from core.telegram_bot import telegram_bot
 from core.whatsapp_bridge import whatsapp_bridge
 
@@ -30,7 +33,7 @@ class RBServer:
         class RequestHandler(BaseHTTPRequestHandler):
             def _send_json(self, data: Dict[str, Any], status: int = 200):
                 self.send_response(status)
-                self.send_header("Content-Type", "application/json")
+                self.send_header("Content-Type", "application/json; charset=utf-8")
                 self.send_header("Access-Control-Allow-Origin", "*")
                 self.send_header("Access-Control-Allow-Methods", "GET, POST, DELETE, OPTIONS")
                 self.send_header("Access-Control-Allow-Headers", "Content-Type, Authorization")
@@ -46,7 +49,7 @@ class RBServer:
                 query = urllib.parse.parse_qs(parsed.query)
 
                 if path == "/api/status":
-                    user_name = db.get_setting("user_name", "Ram Binay kumar Pandit")
+                    user_name = db.get_setting("user_name", "Ram Binay Pandit")
                     status = {
                         "assistant_state": assistant_ref.state,
                         "user_name": user_name,
@@ -55,12 +58,14 @@ class RBServer:
                         "model": assistant_ref.config.GEMINI_MODEL,
                         "has_api_key": bool(assistant_ref.config.GEMINI_API_KEY),
                         "telegram": telegram_bot.get_status(),
-                        "settings": db.get_all_settings()
+                        "supabase": supabase.test_connection(),
+                        "settings": db.get_all_settings(),
+                        "skills_count": len(db.get_skills())
                     }
                     self._send_json(status)
 
                 elif path == "/api/user":
-                    user_name = db.get_setting("user_name", "Ram Binay kumar Pandit")
+                    user_name = db.get_setting("user_name", "Ram Binay Pandit")
                     self._send_json({
                         "user_name": user_name,
                         "greeting": f"नमस्ते, {user_name} आज आपका क्या प्लान है",
@@ -78,6 +83,13 @@ class RBServer:
                 elif path == "/api/chats":
                     chats = db.get_chats(limit=100)
                     self._send_json({"count": len(chats), "chats": chats})
+
+                elif path == "/api/skills":
+                    skills = db.get_skills()
+                    self._send_json({"count": len(skills), "skills": skills})
+
+                elif path == "/api/supabase" or path == "/api/supabase/status":
+                    self._send_json(supabase.test_connection())
 
                 elif path == "/api/telegram":
                     self._send_json(telegram_bot.get_status())
@@ -129,7 +141,7 @@ class RBServer:
                         db.set_setting(k, str(v))
                     self._send_json({"success": True, "settings": db.get_all_settings()})
 
-                # 2. Chat with Auto-Memory Intent & Persistence
+                # 2. Chat with Auto-Memory Intent & Autonomous Routing
                 elif path == "/api/chat":
                     text = payload.get("text", "")
                     image_b64 = payload.get("image")
@@ -141,7 +153,7 @@ class RBServer:
                     if routed_result and routed_result.get("routed"):
                         reply = routed_result.get("response", "Task completed.")
                         agent_name = routed_result.get("agent", "RB Agent")
-                        agent_tag = routed_result.get("tag", "general")
+                        agent_tag = routed_result.get("tag", "automation")
                         db.add_chat(sender="user", message=text, agent_type=agent_tag)
                         db.add_chat(sender="assistant", message=reply, agent_type=agent_tag)
                         if is_voice and assistant_ref.config.ENABLE_TTS:
@@ -151,29 +163,41 @@ class RBServer:
                             "response": reply,
                             "agent": agent_name,
                             "tag": agent_tag,
+                            "active_subagent": agent_tag,
                             "tool_calls": []
                         })
                         return
 
-                    # Normal Gemini / Multimodal Processing
+                    # Normal Gemini / Multimodal Processing with active dynamic skills
                     res = assistant_ref.process_input(raw_text=text, image_bytes=img_bytes, is_voice=is_voice)
-                    
-                    # Persist in SQLite
-                    db.add_chat(
-                        sender="user",
-                        message=text,
-                        agent_type="assistant",
-                        tool_calls=[]
-                    )
-                    db.add_chat(
-                        sender="assistant",
-                        message=res.get("response", ""),
-                        agent_type="assistant",
-                        tool_calls=res.get("tool_calls", [])
-                    )
-                    self._send_json(res)
+                    reply_text = res.get("response", "")
+                    tool_calls = res.get("tool_calls", [])
 
-                # 3. Dedicated 5 Sub-Agents Dispatcher
+                    # Detect if any tool call mapped to a specific sub-agent
+                    active_sub = "core"
+                    if tool_calls:
+                        tname = tool_calls[0].get("tool", "")
+                        if "battery" in tname or "torch" in tname or "vibrate" in tname:
+                            active_sub = "automation"
+                        elif "url" in tname or "search" in tname:
+                            active_sub = "research"
+                        elif "shell" in tname:
+                            active_sub = "coding"
+                    
+                    # Persist in SQLite & Supabase
+                    db.add_chat(sender="user", message=text, agent_type=active_sub, tool_calls=[])
+                    db.add_chat(sender="assistant", message=reply_text, agent_type=active_sub, tool_calls=tool_calls)
+                    
+                    self._send_json({
+                        "state": "IDLE",
+                        "response": reply_text,
+                        "agent": "RB Agent",
+                        "tag": active_sub,
+                        "active_subagent": active_sub,
+                        "tool_calls": tool_calls
+                    })
+
+                # 3. Dedicated 5 Sub-Agents Direct Dispatcher
                 elif path == "/api/agents":
                     agent_name = payload.get("agent", "")
                     action = payload.get("action", "")
@@ -197,7 +221,37 @@ class RBServer:
 
                     self._send_json({"agent": agent_name, "result": result})
 
-                # 4. Notes CRUD
+                # 4. Agent Training & Self-Improvement ("Skill Add")
+                elif path == "/api/skills":
+                    name = payload.get("name", "").strip()
+                    system_prompt = payload.get("system_prompt", "").strip()
+                    description = payload.get("description", "").strip()
+                    examples = payload.get("examples", "").strip()
+
+                    if not name or not system_prompt:
+                        self._send_json({"success": False, "error": "Skill Name and System Directives are required."}, status=400)
+                        return
+
+                    skill_id = db.add_skill(
+                        name=name,
+                        system_prompt=system_prompt,
+                        description=description,
+                        examples=examples
+                    )
+                    self._send_json({
+                        "success": True,
+                        "skill_id": skill_id,
+                        "name": name,
+                        "message": f"Skill '{name}' successfully compiled and activated in live memory."
+                    })
+
+                elif path == "/api/skills/toggle":
+                    skill_id = int(payload.get("id", 0))
+                    enabled = int(bool(payload.get("enabled", True)))
+                    success = db.toggle_skill(skill_id, enabled)
+                    self._send_json({"success": success})
+
+                # 5. Notes CRUD
                 elif path == "/api/notes":
                     title = payload.get("title", "New Note")
                     content = payload.get("content", "")
@@ -205,7 +259,7 @@ class RBServer:
                     note_id = db.add_note(title=title, content=content, tags=tags)
                     self._send_json({"success": True, "note_id": note_id, "title": title})
 
-                # 5. Device Automation Direct Actions
+                # 6. Device Automation Direct Actions
                 elif path == "/api/action":
                     action_name = payload.get("action")
                     args = payload.get("args", {})
@@ -229,7 +283,7 @@ class RBServer:
 
                     self._send_json({"action": action_name, "result": result})
 
-                # 6. Telegram Bot Integration
+                # 7. Telegram Bot Integration
                 elif path == "/api/telegram":
                     action = payload.get("action", "start")
                     token = payload.get("token")
@@ -245,16 +299,16 @@ class RBServer:
                         res = {"error": f"Unknown telegram action: {action}"}
                     self._send_json(res)
 
-                # 7. WhatsApp Integration
+                # 8. WhatsApp Integration
                 elif path == "/api/whatsapp":
                     phone = payload.get("phone", "")
                     message = payload.get("message", "")
                     res = whatsapp_bridge.send_whatsapp_message(phone, message)
                     self._send_json(res)
 
-                # 8. Call Announcement Trigger
+                # 9. Call Announcement Trigger
                 elif path == "/api/call_announcement":
-                    caller_name = payload.get("caller_name", "Unknown")
+                    caller_name = payload.get("caller_name", "")
                     phone = payload.get("phone", "")
                     res = sub_agents.execute_device_automation("call_announcement", {
                         "caller_name": caller_name,
@@ -262,7 +316,105 @@ class RBServer:
                     })
                     self._send_json(res)
 
-                # 9. Config Update
+                # 10. Supabase Sync & Connection
+                elif path == "/api/supabase/sync":
+                    res = db.sync_all_to_supabase()
+                    self._send_json(res)
+
+                elif path == "/api/supabase/save":
+                    url = payload.get("url", "").strip()
+                    key = payload.get("key", "").strip()
+                    if url and key:
+                        db.save_integration("supabase", {"url": url, "key": key})
+                        supabase.update_credentials(url, key)
+                        res = supabase.test_connection()
+                        self._send_json(res)
+                    else:
+                        self._send_json({"success": False, "error": "URL and Key required"}, status=400)
+
+                # 11. Live Credential Handshake Verifier
+                elif path == "/api/test_credentials":
+                    service = payload.get("service")
+                    creds = payload.get("credentials", {})
+
+                    if service == "telegram":
+                        token = creds.get("token", "").strip()
+                        if not token:
+                            self._send_json({"success": False, "error": "Telegram Token is empty"})
+                            return
+                        try:
+                            req = urllib.request.Request(f"https://api.telegram.org/bot{token}/getMe")
+                            with urllib.request.urlopen(req, timeout=8) as r:
+                                tdata = json.loads(r.read().decode("utf-8"))
+                                if tdata.get("ok"):
+                                    bot_info = tdata.get("result", {})
+                                    db.save_integration("telegram", {"token": token, "bot_username": bot_info.get("username")})
+                                    self._send_json({
+                                        "success": True,
+                                        "message": f"Connected as @{bot_info.get('username')} ({bot_info.get('first_name')})"
+                                    })
+                                else:
+                                    self._send_json({"success": False, "error": "Invalid Telegram response"})
+                        except Exception as e:
+                            self._send_json({"success": False, "error": f"Telegram test failed: {str(e)}"})
+
+                    elif service == "github":
+                        user = creds.get("username", "").strip()
+                        token = creds.get("token", "").strip()
+                        headers = {"User-Agent": "RB-Agent-Test", "Accept": "application/vnd.github.v3+json"}
+                        if token:
+                            headers["Authorization"] = f"token {token}"
+                        url = "https://api.github.com/user" if token else f"https://api.github.com/users/{user}"
+                        try:
+                            req = urllib.request.Request(url, headers=headers)
+                            with urllib.request.urlopen(req, timeout=8) as r:
+                                gdata = json.loads(r.read().decode("utf-8"))
+                                db.save_integration("github", {"token": token, "username": user or gdata.get("login", "")})
+                                self._send_json({
+                                    "success": True,
+                                    "message": f"Verified GitHub account: {gdata.get('login')} (Public repos: {gdata.get('public_repos', 0)})"
+                                })
+                        except Exception as e:
+                            self._send_json({"success": False, "error": f"GitHub test failed: {str(e)}"})
+
+                    elif service == "gemini":
+                        key = creds.get("api_key", "").strip()
+                        if not key:
+                            self._send_json({"success": False, "error": "Gemini API key is empty"})
+                            return
+                        try:
+                            url = f"https://generativelanguage.googleapis.com/v1beta/models?key={key}"
+                            req = urllib.request.Request(url)
+                            with urllib.request.urlopen(req, timeout=10) as r:
+                                mdata = json.loads(r.read().decode("utf-8"))
+                                models = [m.get("name").replace("models/", "") for m in mdata.get("models", []) if "generateContent" in m.get("supportedGenerationMethods", [])]
+                                assistant_ref.update_api_key(key)
+                                db.save_integration("gemini", {"api_key": key})
+                                self._send_json({
+                                    "success": True,
+                                    "message": f"Gemini API handshake valid! {len(models)} models available.",
+                                    "models": models[:6]
+                                })
+                        except Exception as e:
+                            self._send_json({"success": False, "error": f"Gemini API test failed: {str(e)}"})
+
+                    elif service == "supabase":
+                        s_url = creds.get("url", "").strip()
+                        s_key = creds.get("key", "").strip()
+                        temp_sb = supabase
+                        temp_sb.update_credentials(s_url, s_key)
+                        res = temp_sb.test_connection()
+                        if res.get("success"):
+                            db.save_integration("supabase", {"url": s_url, "key": s_key})
+                            # Auto-sync
+                            sync_res = db.sync_all_to_supabase()
+                            res["sync_status"] = sync_res
+                        self._send_json(res)
+
+                    else:
+                        self._send_json({"success": False, "error": f"Unknown service: {service}"}, status=400)
+
+                # 12. Config Update
                 elif path == "/api/config":
                     api_key = payload.get("gemini_api_key")
                     if api_key:
@@ -279,6 +431,13 @@ class RBServer:
                         note_id = int(path.split("/")[-1])
                         success = db.delete_note(note_id)
                         self._send_json({"success": success, "deleted_id": note_id})
+                    except Exception as e:
+                        self._send_json({"success": False, "error": str(e)}, status=400)
+                elif path.startswith("/api/skills/"):
+                    try:
+                        skill_id = int(path.split("/")[-1])
+                        success = db.delete_skill(skill_id)
+                        self._send_json({"success": success, "deleted_id": skill_id})
                     except Exception as e:
                         self._send_json({"success": False, "error": str(e)}, status=400)
                 elif path == "/api/chats":

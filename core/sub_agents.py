@@ -248,21 +248,24 @@ class SubAgentsEngine:
         elif action == "notify":
             return automation.send_notification(params.get("title", "RB Agent"), params.get("content", ""))
         elif action == "call_announcement":
-            caller_name = params.get("caller_name", "Unknown Caller")
+            caller_name = params.get("caller_name", "")
             phone = params.get("phone", "")
-            user_name = db.get_setting("user_name", "Ram Binay")
+            short_name = "Ram Binay"
             
             # Announce via TTS in Hindi/English
-            speech = f"{user_name}, {caller_name} का फोन आया है"
+            if not caller_name or caller_name.lower() in ("unknown", "unknown caller"):
+                speech = f"नमस्ते {short_name}, इनका फोन आया है"
+            else:
+                speech = f"नमस्ते {short_name}, {caller_name} का फोन आया है"
             automation.speak(speech)
             automation.send_notification(
-                title=f"Incoming Call: {caller_name}",
-                content=f"Number: {phone} - Voice Announcement Triggered"
+                title=f"Incoming Call: {caller_name or 'Incoming'}",
+                content=f"{speech} (Number: {phone})"
             )
             return {
                 "success": True,
                 "announced": speech,
-                "caller": caller_name,
+                "caller": caller_name or "Unknown",
                 "phone": phone
             }
         elif action == "shell":
@@ -435,17 +438,16 @@ class SubAgentsEngine:
 
         # Call Announcement
         if any(w in lower for w in ["call announce", "call announcement", "कॉल अनाउंस", "फोन आया"]):
-            # Extract caller name if present
-            caller = "Ram Pandit"
+            caller = ""
             match = re.search(r"(?:from|of|का फोन|कॉल)\s+([a-zA-Z\u0900-\u097F\s]+)", raw, re.IGNORECASE)
             if match and match.group(1).strip():
                 caller = match.group(1).strip()
-            self.execute_device_automation("call_announcement", {"caller_name": caller})
+            call_res = self.execute_device_automation("call_announcement", {"caller_name": caller})
             return {
                 "routed": True,
                 "agent": "Automation Agent",
                 "tag": "automation",
-                "response": f"📞 कॉल अनाउंसमेंट सक्रिय: \"{user_name}, {caller} का फोन आया है\""
+                "response": f"📞 कॉल अनाउंसमेंट: \"{call_res.get('announced')}\""
             }
 
         # 3. Research & Web Intent
