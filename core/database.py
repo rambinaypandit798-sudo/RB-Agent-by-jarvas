@@ -75,7 +75,7 @@ class Database:
         self.init_default_settings()
 
     def init_default_settings(self):
-        default_user = "Ram Binay kumar Pandit"
+        default_user = "Ram Binay Pandit"
         if not self.get_setting("user_name"):
             self.set_setting("user_name", default_user)
         if not self.get_setting("voice_pitch"):

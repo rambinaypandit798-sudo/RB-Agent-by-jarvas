@@ -259,120 +259,56 @@ class _HomeScreenState extends State<HomeScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            // Dynamic Greeting Banner
+            // 1. Compact Greeting Banner
             Container(
-              margin: const EdgeInsets.fromLTRB(16, 12, 16, 6),
-              padding: const EdgeInsets.all(18),
+              margin: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               decoration: BoxDecoration(
                 gradient: const LinearGradient(
-                  colors: [Color(0xFF1E3A8A), Color(0xFF0F172A)],
+                  colors: [Color(0xFF0284C7), Color(0xFF0F172A)],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
-                borderRadius: BorderRadius.circular(18),
-                boxShadow: [
-                  BoxShadow(
-                    color: const Color(0xFF1E3A8A).withOpacity(0.25),
-                    blurRadius: 15,
-                    offset: const Offset(0, 6),
-                  ),
-                ],
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: const Color(0xFF00E5FF).withOpacity(0.2)),
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              child: Row(
                 children: [
-                  Text(
-                    "नमस्ते, ${service.userName}",
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 17,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: -0.3,
-                    ),
-                  ),
-                  const SizedBox(height: 3),
-                  const Text(
-                    "आज आपका क्या प्लान है? RB Agent is online.",
-                    style: TextStyle(
-                      color: Color(0xFF94A3B8),
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  // Floating Status Indicator Widget
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.12),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: Colors.white.withOpacity(0.18)),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Icon(Icons.bolt, color: Color(0xFF00E5FF), size: 12),
-                        const SizedBox(width: 4),
                         Text(
-                          "Battery: ${service.deviceStatus['device']?['battery']?['percentage'] ?? '85'}% • Hey RB Wake Active",
+                          "नमस्ते, ${service.userName}",
                           style: const TextStyle(
-                            color: Color(0xFFE2E8F0),
-                            fontSize: 10.5,
-                            fontWeight: FontWeight.w600,
+                            color: Colors.white,
+                            fontSize: 15,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        const Text(
+                          "आज आपका क्या प्लान है?",
+                          style: TextStyle(
+                            color: Color(0xFF94A3B8),
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
                           ),
                         ),
                       ],
                     ),
                   ),
+                  const Icon(Icons.bolt, color: Color(0xFF00E5FF), size: 18),
                 ],
               ),
             ),
 
-            // Central JARVIS Arc Reactor HUD Button
+            // 2. Central Compact Arc Reactor HUD (< 30% height)
             Padding(
-              padding: const EdgeInsets.symmetric(vertical: 8),
+              padding: const EdgeInsets.symmetric(vertical: 6),
               child: HudReactorButton(
-                size: 110,
+                size: 96,
                 onTap: _openSubAgentsWorkspace,
-              ),
-            ),
-
-            // Quick Hardware Action Chips
-            SizedBox(
-              height: 38,
-              child: ListView(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: 14),
-                children: [
-                  _buildQuickChip(
-                    Icons.lightbulb,
-                    _isTorchOn ? "Torch: ON" : "Torch: OFF",
-                    () async {
-                      setState(() => _isTorchOn = !_isTorchOn);
-                      await service.triggerHardwareAction("torch", {"enabled": _isTorchOn});
-                    },
-                    isActive: _isTorchOn,
-                  ),
-                  _buildQuickChip(
-                    Icons.phone,
-                    "Call Announce",
-                    () async {
-                      await service.announceIncomingCall("Ankit Sharma", phone: "+91-9876543210");
-                    },
-                  ),
-                  _buildQuickChip(
-                    Icons.vibration,
-                    "Vibrate",
-                    () async {
-                      await service.triggerHardwareAction("vibrate", {"duration": 300});
-                    },
-                  ),
-                  _buildQuickChip(
-                    Icons.hub,
-                    "5 Sub-Agents",
-                    _openSubAgentsWorkspace,
-                  ),
-                ],
               ),
             ),
 
@@ -501,45 +437,6 @@ class _HomeScreenState extends State<HomeScreen> {
                     onPressed: () => _handleSend(service),
                   ),
                 ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildQuickChip(IconData icon, String label, VoidCallback onTap, {bool isActive = false}) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        margin: const EdgeInsets.only(right: 8),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        decoration: BoxDecoration(
-          color: isActive ? const Color(0xFFE0F2FE) : Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: isActive ? const Color(0xFF0077FE) : const Color(0xFFE2E8F0),
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.02),
-              blurRadius: 4,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 14, color: isActive ? const Color(0xFF0077FE) : const Color(0xFF475569)),
-            const SizedBox(width: 6),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w700,
-                color: isActive ? const Color(0xFF0077FE) : const Color(0xFF334155),
               ),
             ),
           ],
