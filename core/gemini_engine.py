@@ -135,7 +135,7 @@ GEMINI_TOOLS = [
 class GeminiEngine:
     """Multimodal Gemini Engine with native Function Calling."""
 
-    def __init__(self, api_key: str, model: str = "gemini-1.5-flash"):
+    def __init__(self, api_key: str, model: str = "gemini-3-flash-preview"):
         self.api_key = api_key
         self.model = self._normalize_model(model)
         self.system_instruction = RB_MASTER_SYSTEM_PROMPT
@@ -143,15 +143,16 @@ class GeminiEngine:
 
     def _normalize_model(self, model_name: str) -> str:
         """Ensures active Google AI Studio supported model name."""
-        if not model_name or "2.5" in model_name:
-            return "gemini-1.5-flash"
-        if "1.5-flash" in model_name:
-            return "gemini-1.5-flash"
-        if "1.5-pro" in model_name:
-            return "gemini-1.5-pro"
-        if "2.0-flash" in model_name:
-            return "gemini-2.0-flash"
-        return model_name
+        if not model_name:
+            return "gemini-3-flash-preview"
+        m = model_name.strip().replace("models/", "")
+        if m in ("gemini-3-flash-preview", "gemini-3.5-flash-lite", "gemini-flash-latest"):
+            return m
+        if "3-flash" in m or "3.5-flash" in m:
+            return m
+        if "1.5" in m or "2.0" in m or "2.5" in m:
+            return "gemini-3-flash-preview"
+        return m
 
     def set_api_key(self, api_key: str):
         self.api_key = api_key
@@ -249,10 +250,13 @@ class GeminiEngine:
             with urllib.request.urlopen(req, timeout=30) as resp:
                 data = json.loads(resp.read().decode("utf-8"))
         except urllib.error.HTTPError as e:
-            if e.code == 404 and self.model != "gemini-1.5-flash":
-                print(f"[GeminiEngine] Model '{self.model}' returned 404. Auto-recovering with 'gemini-1.5-flash'...")
-                self.model = "gemini-1.5-flash"
-                return self._run_model_turn(depth=depth)
+            if e.code == 404:
+                candidates = ["gemini-3-flash-preview", "gemini-3.5-flash-lite", "gemini-flash-latest", "gemini-1.5-flash"]
+                for candidate in candidates:
+                    if candidate != self.model:
+                        print(f"[GeminiEngine] Model '{self.model}' returned 404. Auto-recovering with '{candidate}'...")
+                        self.model = candidate
+                        return self._run_model_turn(depth=depth)
             err_body = e.read().decode("utf-8")
             return {"text": f"Gemini API Error ({e.code}): {err_body}", "tool_calls": []}
         except Exception as e:

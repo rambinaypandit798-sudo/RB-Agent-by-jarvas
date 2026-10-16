@@ -8,12 +8,20 @@ from core.config import Config, load_config
 from core.gemini_engine import GeminiEngine
 from core.audio_engine import AudioEngine
 from core.automation import automation
+from core.database import db
 
 class RBAssistant:
     """Central intelligent agent orchestrating voice, AI reasoning, and actions."""
 
     def __init__(self, config: Optional[Config] = None):
         self.config = config or load_config()
+
+        # Load persisted Gemini API key from database if not in environment
+        if not self.config.GEMINI_API_KEY:
+            saved_gemini = db.get_integration("gemini")
+            if saved_gemini and saved_gemini.get("api_key"):
+                self.config.GEMINI_API_KEY = saved_gemini.get("api_key")
+
         self.gemini = GeminiEngine(api_key=self.config.GEMINI_API_KEY, model=self.config.GEMINI_MODEL)
         self.audio = AudioEngine(wake_phrase=self.config.WAKE_PHRASE)
         self.state = "IDLE"  # IDLE, LISTENING, THINKING, SPEAKING

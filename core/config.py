@@ -8,7 +8,7 @@ from dataclasses import dataclass
 @dataclass
 class Config:
     GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY", "")
-    GEMINI_MODEL: str = os.getenv("GEMINI_MODEL", "gemini-1.5-flash")
+    GEMINI_MODEL: str = os.getenv("GEMINI_MODEL", "gemini-3-flash-preview")
     WAKE_PHRASE: str = os.getenv("WAKE_PHRASE", "hey rb").lower()
     HOST: str = os.getenv("RB_HOST", "0.0.0.0")
     PORT: int = int(os.getenv("RB_PORT", "8765"))
@@ -36,7 +36,7 @@ def load_config() -> Config:
 
     return Config(
         GEMINI_API_KEY=os.getenv("GEMINI_API_KEY", ""),
-        GEMINI_MODEL=os.getenv("GEMINI_MODEL", "gemini-1.5-flash"),
+        GEMINI_MODEL=os.getenv("GEMINI_MODEL", "gemini-3-flash-preview"),
         WAKE_PHRASE=os.getenv("WAKE_PHRASE", "hey rb").lower(),
         HOST=os.getenv("RB_HOST", "0.0.0.0"),
         PORT=int(os.getenv("RB_PORT", "8765")),
