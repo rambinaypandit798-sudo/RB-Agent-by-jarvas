@@ -21,15 +21,20 @@ class RBAssistantApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'RB.AI Assistant',
+      title: 'RB Agent — Autonomous Operating System',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData.dark().copyWith(
-        scaffoldBackgroundColor: const Color(0xFF090E17),
-        primaryColor: const Color(0xFF00E5FF),
-        colorScheme: const ColorScheme.dark(
-          primary: Color(0xFF00E5FF),
-          secondary: Color(0xFFBD00FF),
-          surface: Color(0xFF131D2E),
+      theme: ThemeData.light().copyWith(
+        scaffoldBackgroundColor: const Color(0xFFF8FAFC),
+        primaryColor: const Color(0xFF0077FE),
+        appBarTheme: const AppBarTheme(
+          backgroundColor: Colors.white,
+          foregroundColor: Color(0xFF0F172A),
+          elevation: 0.5,
+        ),
+        colorScheme: const ColorScheme.light(
+          primary: Color(0xFF0077FE),
+          secondary: Color(0xFF00E5FF),
+          surface: Colors.white,
         ),
       ),
       home: const HomeScreen(),

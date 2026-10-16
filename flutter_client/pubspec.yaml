@@ -1,7 +1,7 @@
 name: rb_ai_client
 description: RB.AI Voice & Multimodal Assistant Flutter Client
 publish_to: 'none'
-version: 1.0.0+1
+version: 2.0.0+1
 
 environment:
   sdk: '>=3.0.0 <4.0.0'
@@ -10,10 +10,12 @@ dependencies:
   flutter:
     sdk: flutter
   http: ^1.2.0
+  provider: ^6.1.1
   speech_to_text: ^6.6.0
   flutter_tts: ^4.0.2
   image_picker: ^1.0.7
-  provider: ^6.1.1
+  shared_preferences: ^2.2.2
+  url_launcher: ^6.2.5
 
 dev_dependencies:
   flutter_test:

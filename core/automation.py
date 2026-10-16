@@ -184,5 +184,20 @@ class TermuxAutomation:
             "exit_code": res.returncode
         }
 
+    def announce_incoming_call(self, caller_name: str, phone: str = "", user_name: str = "Ram Binay") -> Dict[str, Any]:
+        """Announces an incoming phone call via TTS and posts notification."""
+        speech = f"{user_name}, {caller_name} का फोन आया है"
+        self.speak(speech)
+        self.send_notification(
+            title=f"Incoming Call: {caller_name}",
+            content=f"Number: {phone} - Voice Call Announcement"
+        )
+        return {
+            "success": True,
+            "announced": speech,
+            "caller": caller_name,
+            "phone": phone
+        }
+
 # Global singleton
 automation = TermuxAutomation()

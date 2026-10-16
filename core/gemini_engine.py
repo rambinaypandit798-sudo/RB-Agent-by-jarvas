@@ -10,6 +10,7 @@ import base64
 import os
 from typing import List, Dict, Any, Optional
 from core.automation import automation
+from core.master_prompt import RB_MASTER_SYSTEM_PROMPT
 
 GEMINI_TOOLS = [
     {
@@ -136,13 +137,7 @@ class GeminiEngine:
     def __init__(self, api_key: str, model: str = "gemini-2.5-flash"):
         self.api_key = api_key
         self.model = model
-        self.system_instruction = (
-            "You are RB.AI, an intelligent voice and multimodal AI assistant running on "
-            "an Android device powered by Termux, Python, and Flutter. "
-            "You are witty, helpful, proactive, and fast. "
-            "When asked to control hardware (torch, battery, notifications, clipboard, camera, shell), "
-            "always invoke the provided tools. Keep voice responses concise, conversational, and direct."
-        )
+        self.system_instruction = RB_MASTER_SYSTEM_PROMPT
         self.history: List[Dict[str, Any]] = []
 
     def set_api_key(self, api_key: str):
