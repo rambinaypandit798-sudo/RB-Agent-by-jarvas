@@ -29,8 +29,9 @@ def load_config() -> Config:
                 for line in f:
                     line = line.strip()
                     if line and not line.startswith("#") and "=" in line:
-                        k, v = line.split("=", 1)
-                        os.environ.setdefault(k.strip(), v.strip())
+                        key_clean = k.strip()
+                        val_clean = v.strip().strip('"').strip("'")
+                        os.environ[key_clean] = val_clean
         except Exception as e:
             print(f"[Config] Warning: Failed to parse .env: {e}")
 

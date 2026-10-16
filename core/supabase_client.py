@@ -46,33 +46,57 @@ class SupabaseClient:
             }
 
         start_time = datetime.now()
+        # 1. Test via Auth Service (GoTrue)
         try:
-            # Check root PostgREST API descriptor
             req = urllib.request.Request(
-                f"{self.url}/rest/v1/",
-                headers=self._get_headers()
+                f"{self.url}/auth/v1/health",
+                headers={"apikey": self.key, "User-Agent": "RB-Agent-Supabase/2.0"}
             )
-            with urllib.request.urlopen(req, timeout=10) as resp:
+            with urllib.request.urlopen(req, timeout=8) as resp:
                 elapsed_ms = int((datetime.now() - start_time).total_seconds() * 1000)
-                data = resp.read().decode("utf-8")
+                try:
+                    data = json.loads(resp.read().decode("utf-8"))
+                    svc_name = data.get("name", "GoTrue")
+                    svc_ver = data.get("version", "")
+                except Exception:
+                    svc_name, svc_ver = "Live", ""
                 return {
                     "success": True,
                     "configured": True,
                     "status_code": resp.status,
                     "latency_ms": elapsed_ms,
-                    "message": "Supabase handshake verified successfully.",
+                    "message": f"Supabase Connected ({svc_name} {svc_ver})",
+                    "url": self.url
+                }
+        except Exception:
+            pass
+
+        # 2. Test via PostgREST Table Endpoint
+        try:
+            req = urllib.request.Request(
+                f"{self.url}/rest/v1/user_settings?select=*&limit=1",
+                headers=self._get_headers()
+            )
+            with urllib.request.urlopen(req, timeout=8) as resp:
+                elapsed_ms = int((datetime.now() - start_time).total_seconds() * 1000)
+                return {
+                    "success": True,
+                    "configured": True,
+                    "status_code": resp.status,
+                    "latency_ms": elapsed_ms,
+                    "message": "Supabase PostgREST verified successfully.",
                     "url": self.url
                 }
         except urllib.error.HTTPError as e:
             elapsed_ms = int((datetime.now() - start_time).total_seconds() * 1000)
-            # 200 or 404 on schema root can still mean valid auth if headers matched
             if e.code in (200, 204):
                 return {
                     "success": True,
                     "configured": True,
                     "status_code": e.code,
                     "latency_ms": elapsed_ms,
-                    "message": "Supabase handshake connected."
+                    "message": "Supabase handshake connected.",
+                    "url": self.url
                 }
             return {
                 "success": False,
@@ -155,4 +179,19 @@ class SupabaseClient:
         except Exception as e:
             return {"success": False, "error": str(e)}
 
-supabase = SupabaseClient()
+def _init_default_client() -> SupabaseClient:
+    import os
+    url = os.getenv("SUPABASE_URL", "")
+    key = os.getenv("SUPABASE_KEY", "")
+    if not (url and key):
+        try:
+            from core.database import db
+            saved = db.get_integration("supabase")
+            if saved:
+                url = saved.get("url", url)
+                key = saved.get("key", key)
+        except Exception:
+            pass
+    return SupabaseClient(url=url, key=key)
+
+supabase = _init_default_client()

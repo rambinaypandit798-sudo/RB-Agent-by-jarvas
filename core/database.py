@@ -371,25 +371,20 @@ class Database:
             return {"success": False, "error": status.get("error", "Handshake failed")}
 
         results = {}
-        # 1. user_settings
         with self._get_connection() as conn:
             c = conn.cursor()
-            c.execute("SELECT key, value, updated_at FROM user_settings")
-            settings_rows = [dict(r) for r in c.fetchall()]
-            if settings_rows:
-                results["user_settings"] = supabase.upsert_records("user_settings", settings_rows, on_conflict="key")
 
-            # 2. notes_memory
-            c.execute("SELECT id, title, content, tags, created_at FROM notes_memory")
+            # 1. memories (synced from notes_memory)
+            c.execute("SELECT content FROM notes_memory")
             notes_rows = [dict(r) for r in c.fetchall()]
             if notes_rows:
-                results["notes_memory"] = supabase.upsert_records("notes_memory", notes_rows, on_conflict="id")
+                results["memories"] = supabase.upsert_records("memories", notes_rows, on_conflict="content")
 
-            # 3. agent_skills
-            c.execute("SELECT name, description, system_prompt, examples, enabled, created_at, updated_at FROM agent_skills")
-            skills_rows = [dict(r) for r in c.fetchall()]
-            if skills_rows:
-                results["agent_skills"] = supabase.upsert_records("agent_skills", skills_rows, on_conflict="name")
+            # 2. messages (synced from chat_history)
+            c.execute("SELECT sender as role, message as content FROM chat_history")
+            chat_rows = [dict(r) for r in c.fetchall()]
+            if chat_rows:
+                results["messages"] = supabase.upsert_records("messages", chat_rows, on_conflict="content")
 
         return {
             "success": True,
