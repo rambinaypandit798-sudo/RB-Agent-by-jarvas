@@ -1,834 +1,968 @@
 """
-RB.AI - Pristine Hyper-Minimalist Lovable UI
+RB.AI - Master Mobile PWA & Autonomous Operating System Interface
 Developed for: Ram Binay kumar Pandit
-Zero Mock Directive • Real SQLite & Supabase Sync • Compact Arc Reactor HUD • 5 Blinking Sub-Agents
+Mobile-First Single-Screen View • Jarvis Arc Reactor HUD • 5 Blinking Sub-Agents • Sticky 'ASK RB Agent' Dock
 """
 
 WEB_HTML = r"""<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>RB AGENT OS — Ram Binay kumar Pandit</title>
-    <meta name="theme-color" content="#070B12">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>RB Agent — Personal AI Assistant</title>
+    <meta name="theme-color" content="#070B14">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="RB Agent OS">
+    <link rel="manifest" href="/manifest.json">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root {
-            --bg-base: #060911;
-            --bg-sidebar: #0A0F1D;
-            --bg-card: #0F172A;
-            --bg-card-hover: #141F38;
-            --bg-input: #111B30;
+            --bg-base: #060A13;
+            --bg-surface: #0B1224;
+            --bg-card: #0F1A34;
+            --bg-input: #122040;
             --border: rgba(255, 255, 255, 0.08);
             --border-glow: rgba(0, 229, 255, 0.35);
             --text-primary: #F8FAFC;
             --text-muted: #94A3B8;
             --accent-cyan: #00E5FF;
-            --accent-blue: #38BDF8;
+            --accent-blue: #0284C7;
             --accent-green: #10B981;
             --accent-amber: #F59E0B;
             --accent-purple: #A855F7;
             --accent-pink: #EC4899;
         }
 
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
-        body { background: var(--bg-base); color: var(--text-primary); height: 100vh; display: flex; overflow: hidden; }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; -webkit-tap-highlight-color: transparent; }
+        html, body { background: var(--bg-base); color: var(--text-primary); height: 100vh; width: 100vw; overflow: hidden; position: fixed; }
 
-        /* Unified Collapsible Sidebar */
-        .sidebar {
-            width: 270px; background: var(--bg-sidebar); border-right: 1px solid var(--border);
-            display: flex; flex-direction: column; z-index: 50; transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-        }
-        @media (max-width: 768px) {
-            .sidebar { position: fixed; top: 0; bottom: 0; left: 0; transform: translateX(-100%); box-shadow: 4px 0 30px rgba(0,0,0,0.8); }
-            .sidebar.active { transform: translateX(0); }
-        }
-        .sidebar-backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); backdrop-filter: blur(4px); z-index: 45; }
-        .sidebar-backdrop.active { display: block; }
-
-        .sidebar-top {
-            padding: 16px 18px; display: flex; align-items: center; justify-content: space-between;
-            border-bottom: 1px solid var(--border);
-        }
-        .brand { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 1.05rem; letter-spacing: 0.5px; }
-        .brand i { color: var(--accent-cyan); font-size: 1.25rem; }
-        .brand span { color: var(--accent-cyan); }
-        .btn-close-sidebar { display: none; background: none; border: none; color: var(--text-muted); font-size: 1.2rem; cursor: pointer; }
-        @media (max-width: 768px) { .btn-close-sidebar { display: block; } }
-
-        .user-tag-row {
-            padding: 12px 14px; margin: 10px 14px; background: var(--bg-card); border: 1px solid var(--border);
-            border-radius: 12px; display: flex; align-items: center; gap: 10px;
-        }
-        .user-avatar-pill {
-            width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, #0284C7, #00E5FF);
-            color: #060911; font-weight: 900; font-size: 0.85rem; display: flex; align-items: center; justify-content: center;
-        }
-        .user-tag-name { font-size: 0.82rem; font-weight: 700; color: #FFF; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 155px; }
-        .user-tag-sub { font-size: 0.68rem; color: var(--accent-green); display: flex; align-items: center; gap: 5px; margin-top: 1px; }
-
-        /* The Exactly 8 Clean Navigation Items */
-        .sidebar-menu { flex: 1; overflow-y: auto; padding: 6px 12px; display: flex; flex-direction: column; gap: 3px; }
-        .nav-item {
-            display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 10px;
-            color: var(--text-muted); font-size: 0.86rem; font-weight: 600; cursor: pointer; transition: all 0.2s;
-            border: 1px solid transparent;
-        }
-        .nav-item i { width: 18px; font-size: 0.95rem; text-align: center; }
-        .nav-item:hover, .nav-item.active {
-            background: rgba(0, 229, 255, 0.08); color: var(--accent-cyan); border-color: rgba(0, 229, 255, 0.25);
+        /* App Wrapper - Mobile First Single Screen */
+        .app-container {
+            display: flex; flex-direction: column; height: 100vh; width: 100vw; max-width: 540px;
+            margin: 0 auto; position: relative; overflow: hidden; background: var(--bg-base);
+            box-shadow: 0 0 50px rgba(0,0,0,0.8);
         }
 
-        /* Sidebar Chats Bottom Area */
-        .sidebar-bottom-chats {
-            padding: 12px 14px; border-top: 1px solid var(--border); display: flex; flex-direction: column; gap: 8px;
+        /* 1. Top Header */
+        .app-header {
+            height: 52px; background: var(--bg-surface); border-bottom: 1px solid var(--border);
+            padding: 0 16px; display: flex; align-items: center; justify-content: space-between; z-index: 30; flex-shrink: 0;
         }
-        .chat-filter-input {
-            background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px;
-            padding: 8px 12px; font-size: 0.78rem; color: #FFF; outline: none; width: 100%;
-        }
-        .chat-filter-input:focus { border-color: var(--accent-cyan); }
-        .btn-new-chat-prominent {
-            background: linear-gradient(135deg, #0284C7, #00E5FF); color: #060911; border: none;
-            padding: 10px; border-radius: 10px; font-size: 0.85rem; font-weight: 800; cursor: pointer;
-            display: flex; align-items: center; justify-content: center; gap: 8px; transition: opacity 0.2s;
-        }
-        .btn-new-chat-prominent:active { opacity: 0.85; }
-
-        /* Main Viewport */
-        .viewport { flex: 1; display: flex; flex-direction: column; height: 100vh; position: relative; overflow: hidden; }
-
-        /* Top Bar */
-        .topbar {
-            padding: 10px 16px; background: var(--bg-sidebar); border-bottom: 1px solid var(--border);
-            display: flex; align-items: center; justify-content: space-between; z-index: 20; height: 50px;
-        }
-        .btn-menu { background: none; border: none; color: #FFF; font-size: 1.2rem; cursor: pointer; padding: 4px; }
-        .topbar-title { font-size: 0.9rem; font-weight: 700; color: #FFF; }
-        .status-chip {
-            background: rgba(16, 185, 129, 0.15); border: 1px solid var(--accent-green); color: var(--accent-green);
-            padding: 3px 9px; border-radius: 12px; font-size: 0.7rem; font-weight: 700; display: flex; align-items: center; gap: 6px;
+        .header-left { display: flex; align-items: center; gap: 12px; }
+        .btn-hamburger { background: none; border: none; color: #FFF; font-size: 1.25rem; cursor: pointer; padding: 4px; display: flex; align-items: center; }
+        .header-title-box { display: flex; flex-direction: column; }
+        .header-title { font-size: 0.95rem; font-weight: 800; color: #FFF; letter-spacing: 0.3px; display: flex; align-items: center; gap: 6px; }
+        .header-title span { color: var(--accent-cyan); }
+        .header-subtitle { font-size: 0.65rem; color: var(--text-muted); font-weight: 500; }
+        .status-pill {
+            background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.4);
+            padding: 3px 9px; border-radius: 12px; display: flex; align-items: center; gap: 5px; font-size: 0.68rem; font-weight: 700; color: var(--accent-green);
         }
         .status-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent-green); animation: pulseDot 2s infinite; }
-        @keyframes pulseDot { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.4; transform: scale(0.85); } }
+        @keyframes pulseDot { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(0.8); opacity: 0.4; } }
 
-        /* Panels Container */
-        .panels-wrapper { flex: 1; display: flex; flex-direction: column; overflow: hidden; position: relative; }
-        .panel { display: none; flex: 1; flex-direction: column; overflow-y: auto; }
-        .panel.active { display: flex; }
+        /* Main Scrollable Core Stage */
+        .app-stage {
+            flex: 1; overflow-y: auto; overflow-x: hidden; display: flex; flex-direction: column;
+            padding: 10px 14px 125px 14px; gap: 10px; scroll-behavior: smooth;
+        }
+        .app-stage::-webkit-scrollbar { width: 4px; }
+        .app-stage::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
 
-        /* 1. HOMEPAGE VIEW */
-        .home-panel { padding: 8px 14px 105px 14px; gap: 8px; }
+        /* Dynamic Greeting Card */
+        .greeting-banner {
+            background: linear-gradient(135deg, rgba(2, 132, 199, 0.25) 0%, rgba(15, 26, 52, 0.8) 100%);
+            border: 1px solid rgba(0, 229, 255, 0.25); border-radius: 14px; padding: 12px 14px;
+            display: flex; align-items: center; justify-content: space-between; flex-shrink: 0;
+        }
+        .greeting-text-title { font-size: 0.98rem; font-weight: 800; color: #FFF; letter-spacing: -0.2px; }
+        .greeting-text-sub { font-size: 0.74rem; color: var(--text-muted); margin-top: 2px; }
+        .greeting-icon { color: var(--accent-cyan); font-size: 1.2rem; filter: drop-shadow(0 0 8px rgba(0,229,255,0.6)); }
 
-        /* Compact Greeting Banner */
-        .greeting-compact-card {
-            background: linear-gradient(135deg, rgba(2, 132, 199, 0.22) 0%, rgba(15, 23, 42, 0.7) 100%);
-            border: 1px solid rgba(0, 229, 255, 0.25); border-radius: 12px; padding: 10px 14px;
-            display: flex; align-items: center; justify-content: space-between;
+        /* 2. Centerpiece: Stunning Jarvis Arc Reactor Circular HUD */
+        .jarvis-reactor-stage {
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            padding: 8px 0 4px 0; position: relative; user-select: none; flex-shrink: 0;
         }
-        .greet-title { font-size: 0.94rem; font-weight: 800; color: #FFF; }
-        .greet-sub { font-size: 0.74rem; color: var(--text-muted); margin-top: 1px; }
-
-        /* Sleek Compact Arc Reactor HUD (~82px) */
-        .hud-compact-area {
-            display: flex; justify-content: center; align-items: center; padding: 4px 0;
+        .jarvis-reactor-disc {
+            width: 132px; height: 132px; position: relative; display: flex; align-items: center; justify-content: center;
+            cursor: pointer;
         }
-        .reactor-box {
-            width: 82px; height: 82px; position: relative; display: flex; align-items: center; justify-content: center;
-            cursor: pointer; user-select: none;
+        /* Outer Dashed Orbit */
+        .orbit-outer {
+            position: absolute; inset: 0; border-radius: 50%;
+            border: 2px dashed rgba(0, 229, 255, 0.65);
+            animation: spinClockwise 12s linear infinite;
         }
-        .ring-outer {
-            position: absolute; inset: 0; border-radius: 50%; border: 1.5px dashed rgba(0, 229, 255, 0.65);
-            animation: rotateCw 12s linear infinite;
-        }
-        .ring-inner {
-            position: absolute; inset: 7px; border-radius: 50%; border: 1.5px solid rgba(56, 189, 248, 0.4);
+        /* Middle Planetary Ring */
+        .orbit-mid {
+            position: absolute; inset: 10px; border-radius: 50%;
+            border: 2px solid rgba(2, 132, 199, 0.4);
             border-top-color: var(--accent-cyan); border-bottom-color: var(--accent-purple);
-            animation: rotateCcw 7s linear infinite;
+            animation: spinCounter 7s linear infinite;
         }
-        .reactor-core-small {
-            width: 52px; height: 52px; border-radius: 50%; background: radial-gradient(circle, #0F172A 0%, #030712 100%);
-            border: 2px solid var(--accent-cyan); box-shadow: 0 0 16px rgba(0, 229, 255, 0.55);
-            display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center;
+        /* Inner Glowing Orb Core */
+        .reactor-orb-core {
+            width: 84px; height: 84px; border-radius: 50%;
+            background: radial-gradient(circle at 35% 35%, #00E5FF 0%, #0369A1 45%, #070B14 85%);
+            border: 2.5px solid var(--accent-cyan);
+            box-shadow: 0 0 25px rgba(0, 229, 255, 0.6), inset 0 0 15px rgba(0, 229, 255, 0.5);
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            text-align: center; transition: all 0.25s ease;
+            animation: coreBreath 3s infinite ease-in-out;
         }
-        .reactor-box:active .reactor-core-small { transform: scale(0.95); }
-        .reactor-core-small i { color: var(--accent-cyan); font-size: 0.7rem; margin-bottom: 1px; }
-        .reactor-core-small .core-label { font-size: 0.58rem; font-weight: 800; color: #FFF; letter-spacing: 0.3px; }
+        .jarvis-reactor-disc:active .reactor-orb-core {
+            transform: scale(0.92); box-shadow: 0 0 35px rgba(0, 229, 255, 0.9);
+        }
+        @keyframes spinClockwise { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        @keyframes spinCounter { 0% { transform: rotate(360deg); } 100% { transform: rotate(0deg); } }
+        @keyframes coreBreath { 0%, 100% { transform: scale(1); filter: brightness(1); } 50% { transform: scale(1.03); filter: brightness(1.2); } }
 
-        @keyframes rotateCw { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        @keyframes rotateCcw { 0% { transform: rotate(360deg); } 100% { transform: rotate(0deg); } }
+        .orb-title { font-size: 0.82rem; font-weight: 900; color: #FFF; letter-spacing: 0.6px; text-shadow: 0 0 10px rgba(0,0,0,0.8); }
+        .orb-subtitle { font-size: 0.52rem; color: #E0F2FE; font-weight: 700; text-transform: uppercase; letter-spacing: 0.3px; margin-top: 1px; }
 
-        /* Visual Sub-Agents Workspace (5 Sub-Agents with Blinking Glow) */
-        .subagents-workspace {
-            display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; padding: 2px 0 4px 0;
-        }
-        @media (max-width: 600px) {
-            .subagents-workspace { grid-template-columns: repeat(5, 1fr); gap: 4px; }
-        }
-        .subagent-card {
-            background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px;
-            padding: 8px 4px; display: flex; flex-direction: column; align-items: center; text-align: center;
-            cursor: pointer; transition: all 0.25s ease; position: relative; overflow: hidden;
-        }
-        .subagent-card:hover { transform: translateY(-2px); border-color: rgba(255, 255, 255, 0.2); }
-        .subagent-emoji { font-size: 1.25rem; line-height: 1.2; margin-bottom: 4px; }
-        .subagent-title { font-size: 0.65rem; font-weight: 800; color: #FFF; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
-        .subagent-badge {
-            font-size: 0.52rem; font-weight: 800; padding: 2px 5px; border-radius: 4px; margin-top: 4px;
-            text-transform: uppercase; letter-spacing: 0.4px;
+        .reactor-hint {
+            font-size: 0.68rem; color: var(--accent-cyan); margin-top: 6px; font-weight: 600;
+            display: flex; align-items: center; gap: 4px; opacity: 0.85;
         }
 
-        /* 1. Research & Web Agent (Cyan / Blue Glow) */
-        .agent-research { border-color: rgba(0, 229, 255, 0.2); }
-        .agent-research .subagent-badge { background: rgba(0, 229, 255, 0.15); color: var(--accent-cyan); }
-        .agent-research.active-pulse {
+        /* 3. Sub-Agents Integration (Compact Cards with Pulsing/Blinking Glow) */
+        .subagents-strip {
+            display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; flex-shrink: 0;
+        }
+        .subagent-pill {
+            background: var(--bg-surface); border: 1px solid var(--border); border-radius: 10px;
+            padding: 8px 3px; display: flex; flex-direction: column; align-items: center; text-align: center;
+            cursor: pointer; transition: all 0.2s ease; position: relative; overflow: hidden;
+        }
+        .subagent-pill:hover { border-color: rgba(255, 255, 255, 0.25); transform: translateY(-1px); }
+        .subagent-icon-emoji { font-size: 1.25rem; line-height: 1.1; margin-bottom: 3px; }
+        .subagent-name-text { font-size: 0.65rem; font-weight: 800; color: #FFF; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+        .subagent-state-badge {
+            font-size: 0.5rem; font-weight: 800; padding: 2px 4px; border-radius: 4px; margin-top: 3px;
+            text-transform: uppercase; letter-spacing: 0.3px;
+        }
+
+        /* Pulsing/Blinking Glow Animations for Active Sub-Agents */
+        .agent-pill-research { border-color: rgba(0, 229, 255, 0.25); }
+        .agent-pill-research .subagent-state-badge { background: rgba(0, 229, 255, 0.15); color: var(--accent-cyan); }
+        .agent-pill-research.active-blink {
             border-color: var(--accent-cyan) !important;
-            box-shadow: 0 0 16px rgba(0, 229, 255, 0.8) !important;
+            box-shadow: 0 0 16px rgba(0, 229, 255, 0.9) !important;
             animation: pulseCyan 1s infinite alternate;
         }
         @keyframes pulseCyan {
-            0% { box-shadow: 0 0 8px rgba(0, 229, 255, 0.4); transform: scale(1); }
-            100% { box-shadow: 0 0 22px rgba(0, 229, 255, 0.95); transform: scale(1.04); }
+            0% { box-shadow: 0 0 6px rgba(0, 229, 255, 0.4); transform: scale(1); }
+            100% { box-shadow: 0 0 20px rgba(0, 229, 255, 1); transform: scale(1.05); }
         }
 
-        /* 2. Memory & Notes Agent (Emerald Green Glow) */
-        .agent-memory { border-color: rgba(16, 185, 129, 0.2); }
-        .agent-memory .subagent-badge { background: rgba(16, 185, 129, 0.15); color: var(--accent-green); }
-        .agent-memory.active-pulse {
+        .agent-pill-memory { border-color: rgba(16, 185, 129, 0.25); }
+        .agent-pill-memory .subagent-state-badge { background: rgba(16, 185, 129, 0.15); color: var(--accent-green); }
+        .agent-pill-memory.active-blink {
             border-color: var(--accent-green) !important;
-            box-shadow: 0 0 16px rgba(16, 185, 129, 0.8) !important;
+            box-shadow: 0 0 16px rgba(16, 185, 129, 0.9) !important;
             animation: pulseGreen 1s infinite alternate;
         }
         @keyframes pulseGreen {
-            0% { box-shadow: 0 0 8px rgba(16, 185, 129, 0.4); transform: scale(1); }
-            100% { box-shadow: 0 0 22px rgba(16, 185, 129, 0.95); transform: scale(1.04); }
+            0% { box-shadow: 0 0 6px rgba(16, 185, 129, 0.4); transform: scale(1); }
+            100% { box-shadow: 0 0 20px rgba(16, 185, 129, 1); transform: scale(1.05); }
         }
 
-        /* 3. Preview / View Agent (Amber / Gold Glow) */
-        .agent-preview { border-color: rgba(245, 158, 11, 0.2); }
-        .agent-preview .subagent-badge { background: rgba(245, 158, 11, 0.15); color: var(--accent-amber); }
-        .agent-preview.active-pulse {
+        .agent-pill-preview { border-color: rgba(245, 158, 11, 0.25); }
+        .agent-pill-preview .subagent-state-badge { background: rgba(245, 158, 11, 0.15); color: var(--accent-amber); }
+        .agent-pill-preview.active-blink {
             border-color: var(--accent-amber) !important;
-            box-shadow: 0 0 16px rgba(245, 158, 11, 0.8) !important;
+            box-shadow: 0 0 16px rgba(245, 158, 11, 0.9) !important;
             animation: pulseAmber 1s infinite alternate;
         }
         @keyframes pulseAmber {
-            0% { box-shadow: 0 0 8px rgba(245, 158, 11, 0.4); transform: scale(1); }
-            100% { box-shadow: 0 0 22px rgba(245, 158, 11, 0.95); transform: scale(1.04); }
+            0% { box-shadow: 0 0 6px rgba(245, 158, 11, 0.4); transform: scale(1); }
+            100% { box-shadow: 0 0 20px rgba(245, 158, 11, 1); transform: scale(1.05); }
         }
 
-        /* 4. Automation Agent (Electric Purple Glow) */
-        .agent-automation { border-color: rgba(168, 85, 247, 0.2); }
-        .agent-automation .subagent-badge { background: rgba(168, 85, 247, 0.15); color: var(--accent-purple); }
-        .agent-automation.active-pulse {
+        .agent-pill-automation { border-color: rgba(168, 85, 247, 0.25); }
+        .agent-pill-automation .subagent-state-badge { background: rgba(168, 85, 247, 0.15); color: var(--accent-purple); }
+        .agent-pill-automation.active-blink {
             border-color: var(--accent-purple) !important;
-            box-shadow: 0 0 16px rgba(168, 85, 247, 0.8) !important;
+            box-shadow: 0 0 16px rgba(168, 85, 247, 0.9) !important;
             animation: pulsePurple 1s infinite alternate;
         }
         @keyframes pulsePurple {
-            0% { box-shadow: 0 0 8px rgba(168, 85, 247, 0.4); transform: scale(1); }
-            100% { box-shadow: 0 0 22px rgba(168, 85, 247, 0.95); transform: scale(1.04); }
+            0% { box-shadow: 0 0 6px rgba(168, 85, 247, 0.4); transform: scale(1); }
+            100% { box-shadow: 0 0 20px rgba(168, 85, 247, 1); transform: scale(1.05); }
         }
 
-        /* 5. Coding & GitHub Agent (Hot Pink / Magenta Glow) */
-        .agent-coding { border-color: rgba(236, 72, 153, 0.2); }
-        .agent-coding .subagent-badge { background: rgba(236, 72, 153, 0.15); color: var(--accent-pink); }
-        .agent-coding.active-pulse {
+        .agent-pill-coding { border-color: rgba(236, 72, 153, 0.25); }
+        .agent-pill-coding .subagent-state-badge { background: rgba(236, 72, 153, 0.15); color: var(--accent-pink); }
+        .agent-pill-coding.active-blink {
             border-color: var(--accent-pink) !important;
-            box-shadow: 0 0 16px rgba(236, 72, 153, 0.8) !important;
+            box-shadow: 0 0 16px rgba(236, 72, 153, 0.9) !important;
             animation: pulsePink 1s infinite alternate;
         }
         @keyframes pulsePink {
-            0% { box-shadow: 0 0 8px rgba(236, 72, 153, 0.4); transform: scale(1); }
-            100% { box-shadow: 0 0 22px rgba(236, 72, 153, 0.95); transform: scale(1.04); }
+            0% { box-shadow: 0 0 6px rgba(236, 72, 153, 0.4); transform: scale(1); }
+            100% { box-shadow: 0 0 20px rgba(236, 72, 153, 1); transform: scale(1.05); }
         }
 
-        /* Conversational Feed */
-        .conversation-feed { flex: 1; display: flex; flex-direction: column; gap: 8px; overflow-y: auto; padding: 4px 0; }
-        .msg-bubble {
-            max-width: 86%; padding: 9px 13px; border-radius: 12px; font-size: 0.86rem; line-height: 1.44; word-break: break-word;
+        /* 4. Conversational Chat Stream */
+        .chat-feed {
+            display: flex; flex-direction: column; gap: 8px; flex: 1; padding: 4px 0;
         }
-        .msg-bubble.user { align-self: flex-end; background: #0284C7; color: #FFF; border-bottom-right-radius: 2px; }
-        .msg-bubble.assistant {
+        .chat-bubble {
+            max-width: 88%; padding: 10px 14px; border-radius: 14px; font-size: 0.86rem; line-height: 1.44; word-break: break-word;
+        }
+        .chat-bubble.user { align-self: flex-end; background: #0284C7; color: #FFF; border-bottom-right-radius: 3px; }
+        .chat-bubble.assistant {
             align-self: flex-start; background: var(--bg-card); color: var(--text-primary);
-            border: 1px solid var(--border); border-bottom-left-radius: 2px;
+            border: 1px solid var(--border); border-bottom-left-radius: 3px;
         }
-        .tag-pill {
+        .agent-pill-tag {
             display: inline-block; font-size: 0.6rem; font-weight: 800; padding: 2px 6px; border-radius: 5px;
             margin-bottom: 4px; text-transform: uppercase;
         }
-        .pill-memory { background: rgba(16,185,129,0.15); color: var(--accent-green); }
-        .pill-automation { background: rgba(168,85,247,0.15); color: var(--accent-purple); }
-        .pill-research { background: rgba(0,229,255,0.15); color: var(--accent-cyan); }
-        .pill-preview { background: rgba(245,158,11,0.15); color: var(--accent-amber); }
-        .pill-coding { background: rgba(236,72,153,0.15); color: var(--accent-pink); }
-        .pill-general { background: rgba(56,189,248,0.15); color: var(--accent-blue); }
+        .tag-research { background: rgba(0, 229, 255, 0.15); color: var(--accent-cyan); }
+        .tag-memory { background: rgba(16, 185, 129, 0.15); color: var(--accent-green); }
+        .tag-preview { background: rgba(245, 158, 11, 0.15); color: var(--accent-amber); }
+        .tag-automation { background: rgba(168, 85, 247, 0.15); color: var(--accent-purple); }
+        .tag-coding { background: rgba(236, 72, 153, 0.15); color: var(--accent-pink); }
+        .tag-core { background: rgba(56, 189, 248, 0.15); color: var(--accent-blue); }
 
-        /* Real-Time Scrolling Subtitles Ticker (Fixed directly above input dock) */
-        .subtitles-dock {
-            position: absolute; bottom: 56px; left: 0; right: 0; padding: 0 12px 3px 12px;
-            background: linear-gradient(180deg, transparent 0%, var(--bg-base) 100%); z-index: 28;
+        /* 5. Live Ticker / Subtitles Bar (Right above the dock) */
+        .subtitles-ticker-bar {
+            position: absolute; bottom: 62px; left: 0; right: 0; max-width: 540px; margin: 0 auto;
+            padding: 0 12px 3px 12px; z-index: 25; pointer-events: none;
         }
-        .subtitles-inner {
-            background: rgba(15, 23, 42, 0.95); border: 1px solid rgba(56, 189, 248, 0.3);
-            border-radius: 14px; padding: 4px 10px; display: flex; align-items: center; gap: 8px; font-size: 0.72rem; color: var(--accent-blue);
+        .subtitles-box {
+            background: rgba(11, 18, 36, 0.95); border: 1px solid rgba(56, 189, 248, 0.35);
+            border-radius: 14px; padding: 5px 12px; display: flex; align-items: center; gap: 8px;
+            font-size: 0.72rem; color: var(--accent-cyan); pointer-events: auto; backdrop-filter: blur(8px);
         }
-        .subtitles-text { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 500; }
+        .subtitles-box i { font-size: 0.85rem; }
+        .subtitles-content { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 500; }
 
-        /* Sticky Persistent Bottom Chat/Command Input Bar */
-        .bottom-input-dock {
-            position: absolute; bottom: 0; left: 0; right: 0; height: 56px;
-            background: var(--bg-sidebar); border-top: 1px solid var(--border);
-            padding: 8px 12px; display: flex; align-items: center; gap: 8px; z-index: 30;
+        /* 6. Bottom Sticky Dock ("ASK RB Agent") */
+        .ask-rb-dock {
+            position: absolute; bottom: 0; left: 0; right: 0; max-width: 540px; margin: 0 auto;
+            height: 62px; background: var(--bg-surface); border-top: 1px solid var(--border);
+            padding: 8px 12px; display: flex; align-items: center; gap: 6px; z-index: 30;
         }
-        .input-shell {
-            flex: 1; background: var(--bg-input); border: 1px solid var(--border); border-radius: 24px;
-            padding: 6px 14px; display: flex; align-items: center; gap: 8px;
+        
+        /* 1. Plus (+) Attachment Button */
+        .dock-btn-plus {
+            width: 36px; height: 36px; border-radius: 50%; background: var(--bg-input); border: 1px solid var(--border);
+            color: var(--accent-cyan); font-size: 1rem; cursor: pointer; display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0; transition: all 0.2s;
         }
-        .input-shell input {
-            flex: 1; background: transparent; border: none; outline: none; color: #FFF; font-size: 0.86rem;
-        }
-        .dock-action-btn {
-            background: none; border: none; color: var(--accent-cyan); font-size: 1.1rem; cursor: pointer;
-            padding: 4px; display: flex; align-items: center; justify-content: center;
-        }
-        .dock-action-btn.recording { color: #EF4444; animation: pulseMic 1.2s infinite; }
-        @keyframes pulseMic { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.18); } }
+        .dock-btn-plus:active { transform: scale(0.92); }
 
-        /* Dedicated Views (Web, Code, Files, Settings, Projects, Skill Add, Chats) */
-        .page-panel { padding: 14px 16px 80px 16px; overflow-y: auto; height: 100%; display: flex; flex-direction: column; gap: 12px; }
-        .page-title { font-size: 1.05rem; font-weight: 800; color: #FFF; display: flex; align-items: center; gap: 10px; }
-        .card-surface { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 14px; }
-
-        /* Centralized Settings Tabs */
-        .settings-tab-bar { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
-        .tab-btn {
-            background: var(--bg-input); border: 1px solid var(--border); color: var(--text-muted);
-            padding: 7px 11px; border-radius: 8px; font-size: 0.76rem; font-weight: 600; cursor: pointer; white-space: nowrap;
+        /* 2. 'Gemini 2.5 Flash' Pill Selector */
+        .dock-model-pill {
+            background: var(--bg-input); border: 1px solid rgba(0, 229, 255, 0.25); border-radius: 16px;
+            padding: 4px 8px; font-size: 0.68rem; font-weight: 700; color: var(--accent-cyan); cursor: pointer;
+            display: flex; align-items: center; gap: 4px; white-space: nowrap; flex-shrink: 0;
         }
-        .tab-btn.active { background: rgba(0,229,255,0.15); color: var(--accent-cyan); border-color: var(--accent-cyan); }
-        .tab-pane { display: none; flex-direction: column; gap: 10px; margin-top: 12px; }
-        .tab-pane.active { display: flex; }
 
-        .form-field { display: flex; flex-direction: column; gap: 5px; }
-        .form-field label { font-size: 0.74rem; font-weight: 700; color: var(--text-muted); }
-        .form-field input, .form-field select, .form-field textarea {
+        /* Input Shell ("ASK RB Agent...") */
+        .dock-input-shell {
+            flex: 1; background: var(--bg-input); border: 1px solid var(--border); border-radius: 20px;
+            padding: 6px 12px; display: flex; align-items: center; min-width: 0;
+        }
+        .dock-input-shell input {
+            width: 100%; background: transparent; border: none; outline: none; color: #FFF; font-size: 0.84rem;
+        }
+        .dock-input-shell input::placeholder { color: #64748B; font-size: 0.8rem; }
+
+        /* 3. Animated "Live Chat" Circular Button (Pulsing Voice Mode) */
+        .dock-btn-livechat {
+            width: 36px; height: 36px; border-radius: 50%;
+            background: radial-gradient(circle, #0284C7 0%, #0369A1 70%);
+            border: 1.5px solid var(--accent-cyan);
+            color: #FFF; font-size: 0.85rem; cursor: pointer; display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0; position: relative; animation: pulseLiveChat 2s infinite ease-in-out;
+        }
+        @keyframes pulseLiveChat {
+            0%, 100% { box-shadow: 0 0 6px rgba(0, 229, 255, 0.4); transform: scale(1); }
+            50% { box-shadow: 0 0 16px rgba(0, 229, 255, 0.85); transform: scale(1.06); }
+        }
+
+        /* 4. Microphone Audio Button */
+        .dock-btn-mic {
+            width: 36px; height: 36px; border-radius: 50%; background: var(--bg-input); border: 1px solid var(--border);
+            color: var(--accent-cyan); font-size: 0.95rem; cursor: pointer; display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0; transition: all 0.2s;
+        }
+        .dock-btn-mic.recording {
+            background: #EF4444; color: #FFF; animation: pulseRecording 1.1s infinite;
+        }
+        @keyframes pulseRecording { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.16); } }
+
+        /* 5. Send Button */
+        .dock-btn-send {
+            width: 36px; height: 36px; border-radius: 50%;
+            background: linear-gradient(135deg, #0284C7, #00E5FF); border: none;
+            color: #060A13; font-size: 0.95rem; font-weight: 800; cursor: pointer; display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0; transition: all 0.2s;
+        }
+        .dock-btn-send:active { transform: scale(0.92); }
+
+        /* Collapsible Navigation Drawer */
+        .drawer-overlay {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.7); backdrop-filter: blur(4px);
+            z-index: 50; display: none; opacity: 0; transition: opacity 0.3s;
+        }
+        .drawer-overlay.active { display: block; opacity: 1; }
+        .drawer {
+            position: fixed; top: 0; bottom: 0; left: 0; width: 280px; max-width: 80vw;
+            background: #0A1020; z-index: 55; display: flex; flex-direction: column;
+            transform: translateX(-100%); transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            border-right: 1px solid var(--border);
+        }
+        .drawer.active { transform: translateX(0); }
+        .drawer-header {
+            padding: 20px 18px 14px 18px; border-bottom: 1px solid var(--border); background: var(--bg-surface);
+        }
+        .drawer-user-row { display: flex; align-items: center; gap: 12px; }
+        .drawer-avatar {
+            width: 42px; height: 42px; border-radius: 50%; background: linear-gradient(135deg, #0284C7, #00E5FF);
+            color: #060A13; font-weight: 900; font-size: 1rem; display: flex; align-items: center; justify-content: center;
+        }
+        .drawer-user-name { font-size: 0.88rem; font-weight: 800; color: #FFF; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 170px; }
+        .drawer-user-sub { font-size: 0.68rem; color: var(--accent-green); margin-top: 2px; }
+
+        .drawer-menu { flex: 1; overflow-y: auto; padding: 10px 12px; display: flex; flex-direction: column; gap: 3px; }
+        .drawer-item {
+            display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 10px;
+            color: var(--text-muted); font-size: 0.86rem; font-weight: 600; cursor: pointer; transition: all 0.2s;
+        }
+        .drawer-item i { width: 18px; text-align: center; font-size: 0.95rem; }
+        .drawer-item:hover, .drawer-item.active { background: rgba(0, 229, 255, 0.08); color: var(--accent-cyan); }
+
+        .drawer-footer {
+            padding: 12px 14px; border-top: 1px solid var(--border); display: flex; flex-direction: column; gap: 8px;
+        }
+        .drawer-search-input {
+            background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px;
+            padding: 7px 12px; font-size: 0.78rem; color: #FFF; outline: none; width: 100%;
+        }
+        .btn-new-chat {
+            background: linear-gradient(135deg, #0284C7, #00E5FF); color: #060A13; border: none;
+            padding: 9px; border-radius: 8px; font-size: 0.82rem; font-weight: 800; cursor: pointer;
+            display: flex; align-items: center; justify-content: center; gap: 6px;
+        }
+
+        /* Sub-Agents Expanded Modal / View */
+        .subagents-expanded-modal {
+            position: fixed; inset: 0; background: rgba(6, 10, 19, 0.96); backdrop-filter: blur(8px);
+            z-index: 60; display: none; flex-direction: column; max-width: 540px; margin: 0 auto;
+        }
+        .subagents-expanded-modal.active { display: flex; }
+        .modal-top-bar {
+            padding: 12px 16px; border-bottom: 1px solid var(--border); background: var(--bg-surface);
+            display: flex; align-items: center; justify-content: space-between;
+        }
+        .modal-top-title { font-size: 0.95rem; font-weight: 800; color: #FFF; display: flex; align-items: center; gap: 8px; }
+        .modal-close-btn { background: none; border: none; color: #94A3B8; font-size: 1.3rem; cursor: pointer; }
+        .modal-scroll-body { flex: 1; overflow-y: auto; padding: 14px; display: flex; flex-direction: column; gap: 10px; }
+
+        .expanded-agent-card {
+            background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 12px;
+        }
+        .expanded-card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+        .expanded-agent-title { font-weight: 800; font-size: 0.88rem; color: #FFF; display: flex; align-items: center; gap: 8px; }
+        .expanded-input-row { display: flex; gap: 6px; margin-top: 8px; }
+        .expanded-input-row input {
+            flex: 1; background: var(--bg-input); border: 1px solid var(--border); border-radius: 8px;
+            padding: 7px 10px; font-size: 0.8rem; color: #FFF; outline: none;
+        }
+        .btn-run-agent {
+            background: #0284C7; color: #FFF; border: none; border-radius: 8px;
+            padding: 7px 12px; font-size: 0.78rem; font-weight: 700; cursor: pointer;
+        }
+        .agent-output-box {
+            margin-top: 8px; background: #070B14; border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 8px; padding: 8px; font-size: 0.76rem; color: #CBD5E1; max-height: 120px; overflow-y: auto; white-space: pre-wrap; display: none;
+        }
+
+        /* Generic Modals (Settings, Notes, Skills, Code, Web Preview) */
+        .subview-modal {
+            position: fixed; inset: 0; background: rgba(6, 10, 19, 0.98); backdrop-filter: blur(8px);
+            z-index: 60; display: none; flex-direction: column; max-width: 540px; margin: 0 auto;
+        }
+        .subview-modal.active { display: flex; }
+        .subview-body { flex: 1; overflow-y: auto; padding: 14px; display: flex; flex-direction: column; gap: 12px; }
+
+        .form-group { display: flex; flex-direction: column; gap: 5px; }
+        .form-group label { font-size: 0.74rem; font-weight: 700; color: var(--text-muted); }
+        .form-group input, .form-group select, .form-group textarea {
             background: var(--bg-input); border: 1px solid var(--border); color: #FFF;
             padding: 8px 12px; border-radius: 8px; font-size: 0.84rem; outline: none;
         }
-        .form-field input:focus, .form-field select:focus, .form-field textarea:focus { border-color: var(--accent-cyan); }
-
-        .btn-action-primary {
-            background: linear-gradient(135deg, #0284C7, #00E5FF); color: #060911; font-weight: 800;
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color: var(--accent-cyan); }
+        .btn-primary-action {
+            background: linear-gradient(135deg, #0284C7, #00E5FF); color: #060A13; font-weight: 800;
             border: none; padding: 9px 16px; border-radius: 8px; font-size: 0.84rem; cursor: pointer;
         }
-        .btn-action-secondary {
-            background: rgba(255, 255, 255, 0.08); border: 1px solid var(--border); color: #FFF;
-            padding: 9px 14px; border-radius: 8px; font-size: 0.82rem; cursor: pointer; font-weight: 600;
-        }
 
-        .status-badge {
-            display: inline-block; padding: 3px 8px; border-radius: 6px; font-size: 0.72rem; font-weight: 700;
+        .settings-tab-strip { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
+        .stab-btn {
+            background: var(--bg-input); border: 1px solid var(--border); color: var(--text-muted);
+            padding: 6px 10px; border-radius: 8px; font-size: 0.74rem; font-weight: 600; cursor: pointer; white-space: nowrap;
         }
-        .badge-success { background: rgba(16, 185, 129, 0.15); color: var(--accent-green); border: 1px solid var(--accent-green); }
-        .badge-warning { background: rgba(245, 158, 11, 0.15); color: var(--accent-amber); border: 1px solid var(--accent-amber); }
-        .badge-danger { background: rgba(239, 68, 68, 0.15); color: #EF4444; border: 1px solid #EF4444; }
+        .stab-btn.active { background: rgba(0,229,255,0.15); color: var(--accent-cyan); border-color: var(--accent-cyan); }
+        .stab-pane { display: none; flex-direction: column; gap: 10px; margin-top: 10px; }
+        .stab-pane.active { display: flex; }
+
+        .status-chip-tag { display: inline-block; padding: 3px 8px; border-radius: 6px; font-size: 0.7rem; font-weight: 700; }
+        .chip-success { background: rgba(16, 185, 129, 0.15); color: var(--accent-green); border: 1px solid var(--accent-green); }
+        .chip-warning { background: rgba(245, 158, 11, 0.15); color: var(--accent-amber); border: 1px solid var(--accent-amber); }
+        .chip-danger { background: rgba(239, 68, 68, 0.15); color: #EF4444; border: 1px solid #EF4444; }
     </style>
 </head>
 <body>
 
-    <!-- Unified Collapsible Sidebar (Strictly the 8 Navigation Items) -->
-    <div class="sidebar-backdrop" id="sidebarBackdrop" onclick="toggleSidebar(false)"></div>
-    <aside class="sidebar" id="sidebar">
-        <div class="sidebar-top">
-            <div class="brand">
-                <i class="fa-solid fa-atom"></i>
-                RB<span>.AGENT OS</span>
+    <div class="app-container">
+        <!-- 1. Top Header -->
+        <header class="app-header">
+            <div class="header-left">
+                <button class="btn-hamburger" onclick="toggleDrawer(true)" aria-label="Open Menu">
+                    <i class="fa-solid fa-bars"></i>
+                </button>
+                <div class="header-title-box">
+                    <div class="header-title">RB<span>.AGENT</span></div>
+                    <div class="header-subtitle">Personal AI Assistant</div>
+                </div>
             </div>
-            <button class="btn-close-sidebar" onclick="toggleSidebar(false)"><i class="fa-solid fa-xmark"></i></button>
-        </div>
-
-        <div class="user-tag-row">
-            <div class="user-avatar-pill" id="userAvatarPill">RP</div>
-            <div>
-                <div class="user-tag-name" id="sidebarUserName">Ram Binay Pandit</div>
-                <div class="user-tag-sub"><i class="fa-solid fa-circle" style="font-size: 0.45rem;"></i> Master Operator</div>
-            </div>
-        </div>
-
-        <nav class="sidebar-menu">
-            <div class="nav-item active" onclick="showPanel('home')">
-                <i class="fa-solid fa-house"></i> Home
-            </div>
-            <div class="nav-item" onclick="showPanel('web-preview')">
-                <i class="fa-solid fa-globe"></i> Web Preview
-            </div>
-            <div class="nav-item" onclick="showPanel('code-preview')">
-                <i class="fa-solid fa-code"></i> Code Preview & Terminal
-            </div>
-            <div class="nav-item" onclick="showPanel('file-preview')">
-                <i class="fa-solid fa-folder-open"></i> File Preview
-            </div>
-            <div class="nav-item" onclick="showPanel('settings')">
-                <i class="fa-solid fa-sliders"></i> Settings
-            </div>
-            <div class="nav-item" onclick="showPanel('projects')">
-                <i class="fa-solid fa-cubes"></i> Projects
-            </div>
-            <div class="nav-item" onclick="showPanel('skill-add')">
-                <i class="fa-solid fa-puzzle-piece"></i> Skill Add
-            </div>
-            <div class="nav-item" onclick="showPanel('chats')">
-                <i class="fa-solid fa-comments"></i> Chats
-            </div>
-        </nav>
-
-        <div class="sidebar-bottom-chats">
-            <input type="text" class="chat-filter-input" id="chatSearch" placeholder="Search chats..." oninput="searchChats()">
-            <button class="btn-new-chat-prominent" onclick="resetNewChat()">
-                <i class="fa-solid fa-plus"></i> New chat
-            </button>
-        </div>
-    </aside>
-
-    <!-- Main Viewport -->
-    <main class="viewport">
-        <!-- Top Navbar -->
-        <div class="topbar">
-            <button class="btn-menu" onclick="toggleSidebar(true)"><i class="fa-solid fa-bars"></i></button>
-            <div class="topbar-title" id="pageTitleText">RB AGENT OS — Home</div>
-            <div class="status-chip">
+            <div class="status-pill">
                 <div class="status-dot"></div>
-                <span id="topBattStatus">LIVE ACTIVE</span>
+                <span id="headerBattStatus">LIVE</span>
             </div>
-        </div>
+        </header>
 
-        <!-- Panels Container -->
-        <div class="panels-wrapper">
-            <!-- 1. HOMEPAGE VIEW (GREETING, COMPACT ARC REACTOR HUD, 5 BLINKING SUB-AGENTS, FEED) -->
-            <div class="panel home-panel active" id="panel-home">
-                <!-- Compact Greeting Banner -->
-                <div class="greeting-compact-card">
-                    <div>
-                        <div class="greet-title" id="greetBannerText">नमस्ते, Ram Binay Pandit</div>
-                        <div class="greet-sub">आज आपका क्या प्लान है</div>
-                    </div>
-                    <i class="fa-solid fa-bolt" style="color: var(--accent-cyan); font-size: 1.1rem;"></i>
+        <!-- Main Core Stage -->
+        <main class="app-stage" id="appMainStage">
+            <!-- Dynamic Greeting Banner -->
+            <div class="greeting-banner">
+                <div>
+                    <div class="greeting-text-title" id="greetingText">नमस्ते, Ram Binay Pandit</div>
+                    <div class="greeting-text-sub">आज आपका क्या प्लान है</div>
                 </div>
+                <i class="fa-solid fa-bolt greeting-icon"></i>
+            </div>
 
-                <!-- Sleek Compact Arc Reactor HUD (~82px) -->
-                <div class="hud-compact-area">
-                    <div class="reactor-box" onclick="showPanel('settings')" title="RB Agent Orchestrator Core">
-                        <div class="ring-outer"></div>
-                        <div class="ring-inner"></div>
-                        <div class="reactor-core-small">
-                            <i class="fa-solid fa-atom"></i>
-                            <div class="core-label">RB CORE</div>
-                        </div>
+            <!-- 2. Centerpiece: Jarvis Arc Reactor Circular HUD -->
+            <div class="jarvis-reactor-stage">
+                <div class="jarvis-reactor-disc" onclick="openAgentsExpandedModal()" title="Tap to expand Sub-Agents">
+                    <div class="orbit-outer"></div>
+                    <div class="orbit-mid"></div>
+                    <div class="reactor-orb-core">
+                        <i class="fa-solid fa-atom" style="color: var(--accent-cyan); font-size: 0.85rem; margin-bottom: 1px;"></i>
+                        <div class="orb-title">RB Agent</div>
+                        <div class="orb-subtitle">ORCHESTRATOR</div>
                     </div>
                 </div>
-
-                <!-- Visual Sub-Agents Workspace (5 Sub-Agents with Pulsing/Blinking Glow) -->
-                <div class="subagents-workspace">
-                    <!-- 1. 🌐 Research & Web Agent (Cyan / Blue) -->
-                    <div class="subagent-card agent-research" id="card-agent-research" onclick="showPanel('web-preview')" title="Research & Web Agent">
-                        <div class="subagent-emoji">🌐</div>
-                        <div class="subagent-title">Research</div>
-                        <div class="subagent-badge" id="badge-research">READY</div>
-                    </div>
-
-                    <!-- 2. 🧠 Memory & Notes Agent (Emerald Green) -->
-                    <div class="subagent-card agent-memory" id="card-agent-memory" onclick="showPanel('file-preview')" title="Memory & Notes Agent">
-                        <div class="subagent-emoji">🧠</div>
-                        <div class="subagent-title">Memory</div>
-                        <div class="subagent-badge" id="badge-memory">SYNCED</div>
-                    </div>
-
-                    <!-- 3. 👁️ Preview / View Agent (Amber / Gold) -->
-                    <div class="subagent-card agent-preview" id="card-agent-preview" onclick="showPanel('web-preview')" title="Preview / View Agent">
-                        <div class="subagent-emoji">👁️</div>
-                        <div class="subagent-title">Preview</div>
-                        <div class="subagent-badge" id="badge-preview">STANDBY</div>
-                    </div>
-
-                    <!-- 4. ⚡ Automation Agent (Electric Purple) -->
-                    <div class="subagent-card agent-automation" id="card-agent-automation" onclick="testCallAnnouncement()" title="Automation & Hardware Agent">
-                        <div class="subagent-emoji">⚡</div>
-                        <div class="subagent-title">Automation</div>
-                        <div class="subagent-badge" id="badge-automation">HARDWARE</div>
-                    </div>
-
-                    <!-- 5. 💻 Coding & GitHub Agent (Hot Pink / Magenta) -->
-                    <div class="subagent-card agent-coding" id="card-agent-coding" onclick="showPanel('code-preview')" title="Coding & GitHub Agent">
-                        <div class="subagent-emoji">💻</div>
-                        <div class="subagent-title">Coding</div>
-                        <div class="subagent-badge" id="badge-coding">GIT RUN</div>
-                    </div>
-                </div>
-
-                <!-- Conversational Chat Stream -->
-                <div class="conversation-feed" id="chatStream">
-                    <div class="msg-bubble assistant">
-                        <div class="tag-pill pill-automation">RB System</div>
-                        <div>नमस्ते Ram Binay Pandit! RB Agent OS is operational. All 5 sub-agents, hardware bridges, and persistent databases are ready. आज आपका क्या प्लान है?</div>
-                    </div>
+                <div class="reactor-hint" onclick="openAgentsExpandedModal()">
+                    <i class="fa-solid fa-circle-nodes"></i> Tap to expand 5 Sub-Agents
                 </div>
             </div>
 
-            <!-- 2. WEB PREVIEW VIEW -->
-            <div class="panel page-panel" id="panel-web-preview">
-                <div class="page-title"><i class="fa-solid fa-globe" style="color: var(--accent-cyan);"></i> Web Preview & Live Search</div>
-                <div class="card-surface">
-                    <div class="form-field">
-                        <label>Web Search Query or URL</label>
-                        <div style="display: flex; gap: 8px;">
-                            <input type="text" id="webQueryInput" placeholder="Enter query or URL..." value="Latest Google Gemini 2.5 flash updates">
-                            <button class="btn-action-primary" onclick="triggerWebPreview()"><i class="fa-solid fa-magnifying-glass"></i> Search</button>
-                        </div>
-                    </div>
-                    <div id="webPreviewOutput" style="margin-top: 14px; font-size: 0.85rem; color: #CBD5E1; line-height: 1.5; white-space: pre-wrap; max-height: 380px; overflow-y: auto;">
-                        Enter a query to run a live DuckDuckGo web search or scrape a URL.
-                    </div>
+            <!-- 3. Sub-Agents Integration (Compact Cards with Real-Time Blinking Glow) -->
+            <div class="subagents-strip">
+                <!-- 1. 🌐 Research & Web Agent (Cyan) -->
+                <div class="subagent-pill agent-pill-research" id="card-agent-research" onclick="openAgentsExpandedModal('research')">
+                    <div class="subagent-icon-emoji">🌐</div>
+                    <div class="subagent-name-text">Research</div>
+                    <div class="subagent-state-badge" id="badge-research">READY</div>
+                </div>
+
+                <!-- 2. 🧠 Memory & Notes Agent (Emerald Green) -->
+                <div class="subagent-pill agent-pill-memory" id="card-agent-memory" onclick="openAgentsExpandedModal('memory')">
+                    <div class="subagent-icon-emoji">🧠</div>
+                    <div class="subagent-name-text">Memory</div>
+                    <div class="subagent-state-badge" id="badge-memory">SYNCED</div>
+                </div>
+
+                <!-- 3. 👁️ Preview / View Agent (Amber) -->
+                <div class="subagent-pill agent-pill-preview" id="card-agent-preview" onclick="openAgentsExpandedModal('preview')">
+                    <div class="subagent-icon-emoji">👁️</div>
+                    <div class="subagent-name-text">Preview</div>
+                    <div class="subagent-state-badge" id="badge-preview">STANDBY</div>
+                </div>
+
+                <!-- 4. ⚡ Automation Agent (Electric Purple) -->
+                <div class="subagent-pill agent-pill-automation" id="card-agent-automation" onclick="triggerCallAnnouncementTest()">
+                    <div class="subagent-icon-emoji">⚡</div>
+                    <div class="subagent-name-text">Automation</div>
+                    <div class="subagent-state-badge" id="badge-automation">HARDWARE</div>
+                </div>
+
+                <!-- 5. 💻 Coding & GitHub Agent (Hot Pink) -->
+                <div class="subagent-pill agent-pill-coding" id="card-agent-coding" onclick="openAgentsExpandedModal('coding')">
+                    <div class="subagent-icon-emoji">💻</div>
+                    <div class="subagent-name-text">Coding</div>
+                    <div class="subagent-state-badge" id="badge-coding">SANDBOX</div>
                 </div>
             </div>
 
-            <!-- 3. CODE PREVIEW & TERMINAL VIEW -->
-            <div class="panel page-panel" id="panel-code-preview">
-                <div class="page-title"><i class="fa-solid fa-code" style="color: var(--accent-pink);"></i> Code Preview & Terminal</div>
-                <div class="card-surface">
-                    <div class="form-field">
-                        <label>Python 3.14 Sandbox Execution</label>
-                        <textarea id="codeScriptArea" rows="6" style="font-family: monospace;"># RB Agent Live Code Runner
-name = "Ram Binay Pandit"
-print(f"नमस्ते {name}, Python sandbox executed successfully!")
-</textarea>
-                    </div>
-                    <div style="display: flex; gap: 8px; margin-top: 8px;">
-                        <button class="btn-action-primary" onclick="runScriptExecution()"><i class="fa-solid fa-play"></i> Run Script</button>
-                    </div>
-                    <pre id="codeConsoleBox" style="background:#05080E; border:1px solid var(--border); border-radius:8px; padding:10px; margin-top:10px; font-size:0.8rem; color:var(--accent-blue); max-height:160px; overflow-y:auto;">Terminal ready.</pre>
+            <!-- 4. Conversational Chat Stream -->
+            <div class="chat-feed" id="chatFeedStream">
+                <div class="chat-bubble assistant">
+                    <div class="agent-pill-tag tag-core">RB System</div>
+                    <div>नमस्ते Ram Binay Pandit! RB Agent OS is online. Jarvis Arc Reactor is synchronized with all 5 Sub-Agents and persistent memory. आज आपका क्या प्लान है?</div>
                 </div>
             </div>
+        </main>
 
-            <!-- 4. FILE PREVIEW VIEW -->
-            <div class="panel page-panel" id="panel-file-preview">
-                <div class="page-title"><i class="fa-solid fa-folder-open" style="color: var(--accent-amber);"></i> File Preview & SQLite Notes</div>
-                <div class="card-surface">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                        <div style="font-weight: 700; font-size: 0.88rem;">Persistent Notes (SQLite & Supabase)</div>
-                        <button class="btn-action-secondary" onclick="fetchNotes()" style="padding: 4px 10px; font-size: 0.72rem;"><i class="fa-solid fa-rotate"></i> Refresh</button>
-                    </div>
-                    <div id="notesListView" style="display: flex; flex-direction: column; gap: 8px; max-height: 380px; overflow-y: auto;">
-                        Loading notes...
-                    </div>
-                </div>
-            </div>
-
-            <!-- 5. CENTRALIZED SETTINGS HUB (6 DEDICATED SUB-TABS) -->
-            <div class="panel page-panel" id="panel-settings">
-                <div class="page-title"><i class="fa-solid fa-sliders" style="color: var(--accent-cyan);"></i> Centralized Configuration Hub</div>
-                <div class="card-surface">
-                    <!-- The 6 Dedicated Sub-Tabs -->
-                    <div class="settings-tab-bar">
-                        <button class="tab-btn active" onclick="setTab('telegram')">Telegram Bot</button>
-                        <button class="tab-btn" onclick="setTab('whatsapp')">WhatsApp Bridge</button>
-                        <button class="tab-btn" onclick="setTab('github')">GitHub PAT</button>
-                        <button class="tab-btn" onclick="setTab('voice')">Voice Profiles</button>
-                        <button class="tab-btn" onclick="setTab('supabase')">Supabase Keys</button>
-                        <button class="tab-btn" onclick="setTab('gemini')">Google Gemini API</button>
-                    </div>
-
-                    <!-- 1. Tab: Telegram Bot -->
-                    <div class="tab-pane active" id="pane-telegram">
-                        <div class="form-field">
-                            <label>Telegram Bot Token</label>
-                            <input type="text" id="cfgTelegramToken" placeholder="123456789:ABCdefGhIJKlmNoPQRstuvwxYZ">
-                        </div>
-                        <div style="display: flex; gap: 8px; margin-top: 4px;">
-                            <button class="btn-action-primary" style="flex: 1;" onclick="testTelegramHandshake()"><i class="fa-solid fa-link"></i> Test Handshake</button>
-                            <button class="btn-action-secondary" onclick="startTelegramBot()"><i class="fa-solid fa-play"></i> Start</button>
-                            <button class="btn-action-secondary" onclick="stopTelegramBot()">Stop</button>
-                        </div>
-                        <div id="telegramStatusBox" style="font-size: 0.75rem; color: var(--text-muted); margin-top: 6px;">Status: Standby</div>
-                    </div>
-
-                    <!-- 2. Tab: WhatsApp Bridge -->
-                    <div class="tab-pane" id="pane-whatsapp">
-                        <div class="form-field">
-                            <label>Default Phone Number with Country Code (e.g. 919876543210)</label>
-                            <input type="text" id="cfgWaPhone" placeholder="91XXXXXXXXXX">
-                        </div>
-                        <div class="form-field">
-                            <label>Default Dispatch Message</label>
-                            <input type="text" id="cfgWaMsg" value="नमस्ते Ram Binay, RB Agent OS message dispatch.">
-                        </div>
-                        <button class="btn-action-primary" onclick="launchWhatsApp()"><i class="fa-brands fa-whatsapp"></i> Test WhatsApp Bridge</button>
-                    </div>
-
-                    <!-- 3. Tab: GitHub PAT -->
-                    <div class="tab-pane" id="pane-github">
-                        <div class="form-field">
-                            <label>GitHub Username</label>
-                            <input type="text" id="cfgGhUser" value="rambinaypandit798-sudo">
-                        </div>
-                        <div class="form-field">
-                            <label>Personal Access Token (PAT)</label>
-                            <input type="password" id="cfgGhToken" placeholder="ghp_...">
-                        </div>
-                        <div style="display: flex; gap: 8px; margin-top: 4px;">
-                            <button class="btn-action-primary" onclick="testGitHubHandshake()"><i class="fa-brands fa-github"></i> Test Handshake & Sync</button>
-                        </div>
-                        <div id="ghSyncStatus" style="font-size: 0.75rem; color: var(--text-muted); margin-top: 6px;"></div>
-                    </div>
-
-                    <!-- 4. Tab: Voice Profiles -->
-                    <div class="tab-pane" id="pane-voice">
-                        <div class="form-field">
-                            <label>Voice Accent / Language</label>
-                            <select id="cfgVoiceAccent">
-                                <option value="hi-IN">Hindi (India) - hi-IN</option>
-                                <option value="en-IN">English (India) - en-IN</option>
-                                <option value="en-US">English (US) - en-US</option>
-                            </select>
-                        </div>
-                        <div class="form-field">
-                            <label>Speech Pitch</label>
-                            <input type="number" id="cfgVoicePitch" step="0.1" value="1.0">
-                        </div>
-                        <div class="form-field">
-                            <label>Speech Rate</label>
-                            <input type="number" id="cfgVoiceRate" step="0.1" value="0.95">
-                        </div>
-                        <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 6px;">
-                            <label style="display: flex; align-items: center; gap: 8px; font-size: 0.8rem; color: #FFF; cursor: pointer;">
-                                <input type="checkbox" id="cfgWakePhrase" checked> Enable "Hey RB" Wake Word
-                            </label>
-                            <label style="display: flex; align-items: center; gap: 8px; font-size: 0.8rem; color: #FFF; cursor: pointer;">
-                                <input type="checkbox" id="cfgCallAnnounce" checked> Enable Call Announcements ("नमस्ते Ram Binay, इनका फोन आया है")
-                            </label>
-                        </div>
-                    </div>
-
-                    <!-- 5. Tab: Supabase Keys -->
-                    <div class="tab-pane" id="pane-supabase">
-                        <div class="form-field">
-                            <label>Supabase Project URL</label>
-                            <input type="text" id="cfgSupabaseUrl" placeholder="https://xxxxxxxx.supabase.co">
-                        </div>
-                        <div class="form-field">
-                            <label>Supabase API Key (anon public or service_role)</label>
-                            <input type="password" id="cfgSupabaseKey" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...">
-                        </div>
-                        <div style="display: flex; gap: 8px; margin-top: 4px;">
-                            <button class="btn-action-primary" onclick="testSupabaseHandshake()"><i class="fa-solid fa-database"></i> Test & Auto-Migrate Schema</button>
-                            <button class="btn-action-secondary" onclick="syncSupabaseData()"><i class="fa-solid fa-cloud-arrow-up"></i> Sync Now</button>
-                        </div>
-                        <div id="supabaseStatusBox" style="font-size: 0.75rem; color: var(--text-muted); margin-top: 6px;">Checking connection...</div>
-                    </div>
-
-                    <!-- 6. Tab: Google Gemini API Key -->
-                    <div class="tab-pane" id="pane-gemini">
-                        <div class="form-field">
-                            <label>Google Gemini API Key</label>
-                            <input type="password" id="cfgGeminiKey" placeholder="AIzaSy...">
-                        </div>
-                        <div class="form-field">
-                            <label>Model Backbone</label>
-                            <select id="cfgGeminiModel">
-                                <option value="gemini-2.5-flash">Gemini 2.5 Flash (Ultra-fast multimodal)</option>
-                                <option value="gemini-2.5-pro">Gemini 2.5 Pro (Deep reasoning)</option>
-                            </select>
-                        </div>
-                        <button class="btn-action-primary" onclick="testGeminiHandshake()"><i class="fa-solid fa-key"></i> Test Gemini Key Handshake</button>
-                        <div id="geminiStatusBox" style="font-size: 0.75rem; color: var(--text-muted); margin-top: 6px;"></div>
-                    </div>
-
-                    <button class="btn-action-primary" style="width: 100%; margin-top: 14px;" onclick="saveConfigurations()">
-                        <i class="fa-solid fa-floppy-disk"></i> Save All Configurations
-                    </button>
-                </div>
-            </div>
-
-            <!-- 6. PROJECTS VIEW -->
-            <div class="panel page-panel" id="panel-projects">
-                <div class="page-title"><i class="fa-solid fa-cubes" style="color: var(--accent-purple);"></i> Projects</div>
-                <div class="card-surface">
-                    <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-                        <div>
-                            <div style="font-weight: 800; font-size: 1rem; color: #FFF;">rb_ai (RB Agent OS)</div>
-                            <div style="font-size: 0.78rem; color: var(--text-muted); margin-top: 2px;">Developed for Ram Binay kumar Pandit</div>
-                        </div>
-                        <span class="status-badge badge-success">Active Workspace</span>
-                    </div>
-                    <div style="margin-top: 12px; font-size: 0.78rem; color: #CBD5E1; display: flex; flex-direction: column; gap: 4px;">
-                        <div>• <strong>Environment</strong>: Termux Android Linux Userland (aarch64)</div>
-                        <div>• <strong>Database</strong>: SQLite 3 (<code>rb_agent.db</code>) + Supabase Cloud Engine</div>
-                        <div>• <strong>Architecture</strong>: 5 Live Sub-Agents + Arc Reactor HUD Orchestrator</div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 7. SKILL ADD VIEW (AGENT SELF-IMPROVEMENT & CAPABILITY CREATOR) -->
-            <div class="panel page-panel" id="panel-skill-add">
-                <div class="page-title"><i class="fa-solid fa-puzzle-piece" style="color: var(--accent-green);"></i> Skill Add & Self-Training</div>
-                <div class="card-surface">
-                    <div style="font-weight: 700; font-size: 0.88rem; color: var(--accent-cyan); margin-bottom: 4px;">Feed Custom Training Directives</div>
-                    <div style="font-size: 0.76rem; color: var(--text-muted); margin-bottom: 12px;">Teach RB Agent new specialized capabilities on the fly. Dynamically persisted to SQLite & Supabase.</div>
-
-                    <div class="form-field">
-                        <label>Skill Name (e.g. Hindi Tech Translator, Termux DevOps Expert)</label>
-                        <input type="text" id="skillNameInput" placeholder="Skill Name">
-                    </div>
-                    <div class="form-field">
-                        <label>Trigger / Context Description</label>
-                        <input type="text" id="skillDescInput" placeholder="When user asks about...">
-                    </div>
-                    <div class="form-field">
-                        <label>System Directives & Instructions</label>
-                        <textarea id="skillPromptInput" rows="4" placeholder="You are a specialized expert in... Always output in..."></textarea>
-                    </div>
-                    <div class="form-field">
-                        <label>Few-Shot Examples (Optional)</label>
-                        <textarea id="skillExamplesInput" rows="2" placeholder="User: ... -> Assistant: ..."></textarea>
-                    </div>
-                    <button class="btn-action-primary" style="margin-top: 8px;" onclick="saveSkillLive()"><i class="fa-solid fa-graduation-cap"></i> Train & Register Skill Live</button>
-                    <div id="skillStatusFeedback" style="font-size: 0.75rem; margin-top: 6px;"></div>
-                </div>
-
-                <div class="card-surface">
-                    <div style="font-weight: 700; font-size: 0.88rem; margin-bottom: 10px;">Active Learned Skills in Live Memory</div>
-                    <div id="installedSkillsList" style="display: flex; flex-direction: column; gap: 8px;">
-                        Loading skills...
-                    </div>
-                </div>
-            </div>
-
-            <!-- 8. CHATS VIEW -->
-            <div class="panel page-panel" id="panel-chats">
-                <div class="page-title"><i class="fa-solid fa-comments" style="color: var(--accent-blue);"></i> Chat History</div>
-                <div class="card-surface">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                        <span style="font-size: 0.78rem; color: var(--text-muted);">Stored locally in SQLite <code>chat_history</code></span>
-                        <button class="btn-action-secondary" onclick="clearAllChats()" style="padding: 4px 10px; font-size: 0.72rem; color: #EF4444;"><i class="fa-solid fa-trash"></i> Clear</button>
-                    </div>
-                    <div id="chatsListContainer" style="display: flex; flex-direction: column; gap: 8px; max-height: 400px; overflow-y: auto;">
-                        Loading chats...
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Real-Time Scrolling Subtitles Ticker (Fixed directly above input dock) -->
-        <div class="subtitles-dock">
-            <div class="subtitles-inner">
+        <!-- 5. Live Ticker / Subtitles Bar (Right above the dock) -->
+        <div class="subtitles-ticker-bar">
+            <div class="subtitles-box">
                 <i class="fa-solid fa-closed-captioning"></i>
-                <div class="subtitles-text" id="subtitlesTicker">
-                    RB Agent OS ready • Autonomous intent routing active
+                <div class="subtitles-content" id="subtitlesTickerText">
+                    RB Agent ready • Autonomous intent routing active
                 </div>
             </div>
         </div>
 
-        <!-- Sticky Persistent Bottom Chat/Command Input Bar -->
-        <div class="bottom-input-dock">
-            <button class="dock-action-btn" onclick="captureSnapshot()" title="Camera Snapshot"><i class="fa-solid fa-camera"></i></button>
-            <div class="input-shell">
-                <input type="text" id="primaryChatInput" placeholder="Message RB Agent or say 'यह चीज़ सेव कर लो'..." onkeypress="onEnterSubmit(event)">
+        <!-- 6. Bottom Sticky Dock ("ASK RB Agent") -->
+        <footer class="ask-rb-dock">
+            <!-- 1. Plus (+) Attachment Button -->
+            <button class="dock-btn-plus" onclick="triggerCameraCapture()" title="Attach / Camera">
+                <i class="fa-solid fa-plus"></i>
+            </button>
+
+            <!-- 2. "Gemini 2.5 Flash" Pill Selector -->
+            <div class="dock-model-pill" onclick="cycleGeminiModel()" id="dockModelSelector" title="LLM Model Selector">
+                <i class="fa-solid fa-bolt" style="font-size: 0.65rem;"></i>
+                <span id="dockModelText">Gemini 2.5 Flash</span>
             </div>
-            <button class="dock-action-btn" id="micBtn" onclick="toggleMic()" title="Microphone"><i class="fa-solid fa-microphone"></i></button>
-            <button class="dock-action-btn" onclick="sendChatMessage()" title="Send"><i class="fa-solid fa-paper-plane"></i></button>
+
+            <!-- Input Box -->
+            <div class="dock-input-shell">
+                <input type="text" id="dockChatInput" placeholder="ASK RB Agent..." onkeypress="onDockEnter(event)">
+            </div>
+
+            <!-- 3. Animated "Live Chat" Circular Button (Pulsing Voice Mode) -->
+            <div class="dock-btn-livechat" onclick="toggleVoiceMode()" title="Live Chat (Pulsing Audio Mode)">
+                <i class="fa-solid fa-wave-square"></i>
+            </div>
+
+            <!-- 4. Microphone Audio Button -->
+            <button class="dock-btn-mic" id="dockMicBtn" onclick="toggleVoiceMode()" title="Voice Input">
+                <i class="fa-solid fa-microphone"></i>
+            </button>
+
+            <!-- 5. Send Button -->
+            <button class="dock-btn-send" onclick="sendDockMessage()" title="Send Command">
+                <i class="fa-solid fa-paper-plane"></i>
+            </button>
+        </footer>
+
+        <!-- Collapsible Navigation Drawer (8 Clean Items) -->
+        <div class="drawer-overlay" id="drawerBackdrop" onclick="toggleDrawer(false)"></div>
+        <aside class="drawer" id="mainSidebarDrawer">
+            <div class="drawer-header">
+                <div class="drawer-user-row">
+                    <div class="drawer-avatar" id="drawerAvatarPill">RP</div>
+                    <div>
+                        <div class="drawer-user-name" id="drawerUserName">Ram Binay Pandit</div>
+                        <div class="drawer-user-sub"><i class="fa-solid fa-circle" style="font-size: 0.45rem;"></i> Master Operator</div>
+                    </div>
+                </div>
+            </div>
+
+            <nav class="drawer-menu">
+                <div class="drawer-item active" onclick="navigateDrawer('home')">
+                    <i class="fa-solid fa-house"></i> Home
+                </div>
+                <div class="drawer-item" onclick="openSubview('web-preview')">
+                    <i class="fa-solid fa-globe"></i> Web Preview
+                </div>
+                <div class="drawer-item" onclick="openSubview('code-preview')">
+                    <i class="fa-solid fa-code"></i> Code Preview & Terminal
+                </div>
+                <div class="drawer-item" onclick="openSubview('file-preview')">
+                    <i class="fa-solid fa-folder-open"></i> File Preview & Notes
+                </div>
+                <div class="drawer-item" onclick="openSubview('settings')">
+                    <i class="fa-solid fa-sliders"></i> Settings Hub
+                </div>
+                <div class="drawer-item" onclick="openSubview('projects')">
+                    <i class="fa-solid fa-cubes"></i> Projects
+                </div>
+                <div class="drawer-item" onclick="openSubview('skills')">
+                    <i class="fa-solid fa-puzzle-piece"></i> Skill Add & Self-Training
+                </div>
+                <div class="drawer-item" onclick="openSubview('chats')">
+                    <i class="fa-solid fa-comments"></i> Chats History
+                </div>
+            </nav>
+
+            <div class="drawer-footer">
+                <input type="text" class="drawer-search-input" id="drawerSearchInput" placeholder="Search chats..." oninput="filterDrawerChats()">
+                <button class="btn-new-chat" onclick="startNewChatSession()">
+                    <i class="fa-solid fa-plus"></i> New chat
+                </button>
+            </div>
+        </aside>
+
+        <!-- Sub-Agents Expanded Interactive Modal -->
+        <div class="subagents-expanded-modal" id="agentsExpandedModal">
+            <div class="modal-top-bar">
+                <div class="modal-top-title">
+                    <i class="fa-solid fa-network-wired" style="color: var(--accent-cyan);"></i> 5 SUB-AGENTS WORKSPACE
+                </div>
+                <button class="modal-close-btn" onclick="closeAgentsExpandedModal()"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="modal-scroll-body">
+                <!-- 1. Research & Web Agent -->
+                <div class="expanded-agent-card" style="border-left: 3px solid var(--accent-cyan);">
+                    <div class="expanded-card-header">
+                        <div class="expanded-agent-title">🌐 Research & Web Agent</div>
+                        <span class="status-chip-tag chip-success">LIVE API</span>
+                    </div>
+                    <div style="font-size: 0.74rem; color: var(--text-muted);">Real-time DuckDuckGo instant web intelligence and live URL scraper.</div>
+                    <div class="expanded-input-row">
+                        <input type="text" id="wsResearchInput" value="latest Google Gemini 2.5 flash updates">
+                        <button class="btn-run-agent" onclick="executeWsResearch()">Search</button>
+                    </div>
+                    <div class="agent-output-box" id="wsResearchOutput"></div>
+                </div>
+
+                <!-- 2. Memory & Notes Agent -->
+                <div class="expanded-agent-card" style="border-left: 3px solid var(--accent-green);">
+                    <div class="expanded-card-header">
+                        <div class="expanded-agent-title">🧠 Memory & Notes Agent</div>
+                        <span class="status-chip-tag chip-success">SQLITE & SUPABASE</span>
+                    </div>
+                    <div style="font-size: 0.74rem; color: var(--text-muted);">Parses intents like "यह चीज़ सेव कर लो" and syncs long-term memory.</div>
+                    <div class="expanded-input-row">
+                        <input type="text" id="wsMemoryInput" value="यह चीज़ सेव कर लो: Meeting with Ram Binay Pandit tomorrow">
+                        <button class="btn-run-agent" onclick="executeWsMemory()">Store</button>
+                    </div>
+                    <div class="agent-output-box" id="wsMemoryOutput"></div>
+                </div>
+
+                <!-- 3. Preview / View Agent -->
+                <div class="expanded-agent-card" style="border-left: 3px solid var(--accent-amber);">
+                    <div class="expanded-card-header">
+                        <div class="expanded-agent-title">👁️ Preview / View Agent</div>
+                        <span class="status-chip-tag chip-warning">SCRAPER</span>
+                    </div>
+                    <div style="font-size: 0.74rem; color: var(--text-muted);">Scrapes metadata, page titles, and inspects Markdown content.</div>
+                    <div class="expanded-input-row">
+                        <input type="text" id="wsPreviewInput" value="https://deepmind.google/technologies/gemini/">
+                        <button class="btn-run-agent" onclick="executeWsPreview()">Preview</button>
+                    </div>
+                    <div class="agent-output-box" id="wsPreviewOutput"></div>
+                </div>
+
+                <!-- 4. Automation Agent -->
+                <div class="expanded-agent-card" style="border-left: 3px solid var(--accent-purple);">
+                    <div class="expanded-card-header">
+                        <div class="expanded-agent-title">⚡ Automation Agent</div>
+                        <span class="status-chip-tag chip-success">TERMUX API</span>
+                    </div>
+                    <div style="font-size: 0.74rem; color: var(--text-muted);">Device controls (flashlight, battery, haptics, and voice call announcements).</div>
+                    <div style="display: flex; gap: 6px; margin-top: 8px;">
+                        <button class="btn-run-agent" onclick="triggerHardwareAction('torch')"><i class="fa-solid fa-lightbulb"></i> Torch</button>
+                        <button class="btn-run-agent" onclick="triggerHardwareAction('battery')"><i class="fa-solid fa-battery-half"></i> Battery</button>
+                        <button class="btn-run-agent" onclick="triggerHardwareAction('vibrate')"><i class="fa-solid fa-mobile-screen"></i> Haptic</button>
+                        <button class="btn-run-agent" onclick="triggerCallAnnouncementTest()"><i class="fa-solid fa-phone"></i> Call Announce</button>
+                    </div>
+                    <div class="agent-output-box" id="wsAutomationOutput"></div>
+                </div>
+
+                <!-- 5. Coding & GitHub Agent -->
+                <div class="expanded-agent-card" style="border-left: 3px solid var(--accent-pink);">
+                    <div class="expanded-card-header">
+                        <div class="expanded-agent-title">💻 Coding & GitHub Agent</div>
+                        <span class="status-chip-tag chip-success">SANDBOX</span>
+                    </div>
+                    <div style="font-size: 0.74rem; color: var(--text-muted);">Runs Python 3 on Termux Linux and syncs repositories via GitHub API.</div>
+                    <div class="expanded-input-row">
+                        <input type="text" id="wsCodingInput" value="torvalds">
+                        <button class="btn-run-agent" onclick="executeWsGithub()">Fetch Repos</button>
+                    </div>
+                    <div class="agent-output-box" id="wsCodingOutput"></div>
+                </div>
+            </div>
         </div>
-    </main>
+
+        <!-- Generic Subviews (Settings Hub, Notes, Skills, Code, Web Preview) -->
+        <!-- View: Settings Hub -->
+        <div class="subview-modal" id="modal-settings">
+            <div class="modal-top-bar">
+                <div class="modal-top-title"><i class="fa-solid fa-sliders" style="color: var(--accent-cyan);"></i> Centralized Settings Hub</div>
+                <button class="modal-close-btn" onclick="closeSubview('settings')"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="subview-body">
+                <div class="settings-tab-strip">
+                    <button class="stab-btn active" onclick="switchSettingTab('telegram')">Telegram</button>
+                    <button class="stab-btn" onclick="switchSettingTab('whatsapp')">WhatsApp</button>
+                    <button class="stab-btn" onclick="switchSettingTab('github')">GitHub PAT</button>
+                    <button class="stab-btn" onclick="switchSettingTab('voice')">Voice Profiles</button>
+                    <button class="stab-btn" onclick="switchSettingTab('supabase')">Supabase Keys</button>
+                    <button class="stab-btn" onclick="switchSettingTab('gemini')">Google Gemini</button>
+                </div>
+
+                <!-- Tab: Telegram -->
+                <div class="stab-pane active" id="spane-telegram">
+                    <div class="form-group">
+                        <label>Telegram Bot Token</label>
+                        <input type="text" id="setTgToken" placeholder="123456789:ABCdefGhIJKlmNoPQRstuvwxYZ">
+                    </div>
+                    <div style="display: flex; gap: 8px;">
+                        <button class="btn-primary-action" onclick="handshakeTelegram()"><i class="fa-solid fa-link"></i> Test Handshake</button>
+                        <button class="btn-run-agent" onclick="controlTelegram('start')">Start Bot</button>
+                        <button class="btn-run-agent" style="background:#475569;" onclick="controlTelegram('stop')">Stop</button>
+                    </div>
+                    <div id="tgStatusFeedback" style="font-size: 0.74rem; color: var(--text-muted); margin-top: 4px;"></div>
+                </div>
+
+                <!-- Tab: WhatsApp -->
+                <div class="stab-pane" id="spane-whatsapp">
+                    <div class="form-group">
+                        <label>Target Phone Number with Country Code</label>
+                        <input type="text" id="setWaPhone" placeholder="91XXXXXXXXXX">
+                    </div>
+                    <div class="form-group">
+                        <label>Default Message</label>
+                        <input type="text" id="setWaMsg" value="नमस्ते Ram Binay, RB Agent OS message.">
+                    </div>
+                    <button class="btn-primary-action" onclick="launchWaBridge()"><i class="fa-brands fa-whatsapp"></i> Test WhatsApp Bridge</button>
+                </div>
+
+                <!-- Tab: GitHub -->
+                <div class="stab-pane" id="spane-github">
+                    <div class="form-group">
+                        <label>GitHub Username</label>
+                        <input type="text" id="setGhUser" value="rambinaypandit798-sudo">
+                    </div>
+                    <div class="form-group">
+                        <label>Personal Access Token (PAT)</label>
+                        <input type="password" id="setGhToken" placeholder="ghp_...">
+                    </div>
+                    <button class="btn-primary-action" onclick="handshakeGitHub()"><i class="fa-brands fa-github"></i> Test Handshake & Sync</button>
+                    <div id="ghStatusFeedback" style="font-size: 0.74rem; color: var(--text-muted); margin-top: 4px;"></div>
+                </div>
+
+                <!-- Tab: Voice Profiles -->
+                <div class="stab-pane" id="spane-voice">
+                    <div class="form-group">
+                        <label>Voice Accent / Language</label>
+                        <select id="setVoiceAccent">
+                            <option value="hi-IN">Hindi (India) - hi-IN</option>
+                            <option value="en-IN">English (India) - en-IN</option>
+                            <option value="en-US">English (US) - en-US</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Speech Pitch (0.5 - 2.0)</label>
+                        <input type="number" id="setVoicePitch" step="0.1" value="1.0">
+                    </div>
+                    <div class="form-group">
+                        <label>Speech Rate (0.5 - 2.0)</label>
+                        <input type="number" id="setVoiceRate" step="0.1" value="0.95">
+                    </div>
+                    <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 4px;">
+                        <label style="display: flex; align-items: center; gap: 8px; font-size: 0.8rem; color: #FFF;">
+                            <input type="checkbox" id="setWakeWord" checked> Enable "Hey RB" Wake Word
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 8px; font-size: 0.8rem; color: #FFF;">
+                            <input type="checkbox" id="setCallAnnounce" checked> Enable Voice Call Announcements
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Tab: Supabase -->
+                <div class="stab-pane" id="spane-supabase">
+                    <div class="form-group">
+                        <label>Supabase Project URL</label>
+                        <input type="text" id="setSbUrl" placeholder="https://xxxxxxxx.supabase.co">
+                    </div>
+                    <div class="form-group">
+                        <label>Supabase API Key (anon public or service_role)</label>
+                        <input type="password" id="setSbKey" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...">
+                    </div>
+                    <div style="display: flex; gap: 8px;">
+                        <button class="btn-primary-action" onclick="handshakeSupabase()"><i class="fa-solid fa-database"></i> Test & Auto-Migrate Schema</button>
+                        <button class="btn-run-agent" onclick="syncSupabaseCloud()"><i class="fa-solid fa-cloud-arrow-up"></i> Sync Now</button>
+                    </div>
+                    <div id="sbStatusFeedback" style="font-size: 0.74rem; color: var(--text-muted); margin-top: 4px;"></div>
+                </div>
+
+                <!-- Tab: Gemini -->
+                <div class="stab-pane" id="spane-gemini">
+                    <div class="form-group">
+                        <label>Google Gemini API Key</label>
+                        <input type="password" id="setGeminiKey" placeholder="AIzaSy...">
+                    </div>
+                    <button class="btn-primary-action" onclick="handshakeGemini()"><i class="fa-solid fa-key"></i> Test Gemini Handshake</button>
+                    <div id="geminiStatusFeedback" style="font-size: 0.74rem; color: var(--text-muted); margin-top: 4px;"></div>
+                </div>
+
+                <button class="btn-primary-action" style="margin-top: 14px;" onclick="saveAllSettingsLive()">
+                    <i class="fa-solid fa-floppy-disk"></i> Save Configurations
+                </button>
+            </div>
+        </div>
+
+        <!-- View: Skills Add & Self-Training -->
+        <div class="subview-modal" id="modal-skills">
+            <div class="modal-top-bar">
+                <div class="modal-top-title"><i class="fa-solid fa-puzzle-piece" style="color: var(--accent-green);"></i> Skill Add & Self-Training</div>
+                <button class="modal-close-btn" onclick="closeSubview('skills')"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="subview-body">
+                <div style="font-size: 0.76rem; color: var(--text-muted);">Feed custom prompt directives to auto-improve RB Agent. Persists dynamically to SQLite & Supabase.</div>
+                <div class="form-group">
+                    <label>Skill Name (e.g. Hindi Tech Translator)</label>
+                    <input type="text" id="skillNameInput" placeholder="Skill Name">
+                </div>
+                <div class="form-group">
+                    <label>Trigger / Context Description</label>
+                    <input type="text" id="skillDescInput" placeholder="When user asks about...">
+                </div>
+                <div class="form-group">
+                    <label>System Directives & Instructions</label>
+                    <textarea id="skillPromptInput" rows="4" placeholder="You are a specialized expert in..."></textarea>
+                </div>
+                <button class="btn-primary-action" onclick="saveSkillTraining()"><i class="fa-solid fa-graduation-cap"></i> Train & Register Skill</button>
+                <div id="skillFeedbackMsg" style="font-size: 0.74rem; margin-top: 4px;"></div>
+
+                <div style="font-weight: 800; font-size: 0.86rem; color: #FFF; margin-top: 14px;">Active Skills in Live Memory:</div>
+                <div id="activeSkillsList" style="display: flex; flex-direction: column; gap: 8px;">Loading skills...</div>
+            </div>
+        </div>
+
+        <!-- View: Web Preview -->
+        <div class="subview-modal" id="modal-web-preview">
+            <div class="modal-top-bar">
+                <div class="modal-top-title"><i class="fa-solid fa-globe" style="color: var(--accent-cyan);"></i> Web Preview & Live Search</div>
+                <button class="modal-close-btn" onclick="closeSubview('web-preview')"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="subview-body">
+                <div class="form-group">
+                    <label>Web Search Query or URL</label>
+                    <div style="display: flex; gap: 6px;">
+                        <input type="text" id="webPreviewQuery" value="Google Gemini latest updates">
+                        <button class="btn-primary-action" onclick="runWebPreviewSearch()">Search</button>
+                    </div>
+                </div>
+                <div id="webPreviewOutputBox" style="font-size: 0.8rem; color: #CBD5E1; line-height: 1.5; white-space: pre-wrap; max-height: 400px; overflow-y: auto;"></div>
+            </div>
+        </div>
+
+        <!-- View: Code Preview & Terminal -->
+        <div class="subview-modal" id="modal-code-preview">
+            <div class="modal-top-bar">
+                <div class="modal-top-title"><i class="fa-solid fa-code" style="color: var(--accent-pink);"></i> Code Preview & Terminal</div>
+                <button class="modal-close-btn" onclick="closeSubview('code-preview')"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="subview-body">
+                <div class="form-group">
+                    <label>Python 3 Sandbox Execution</label>
+                    <textarea id="codeRunnerArea" rows="6" style="font-family: monospace;">name = "Ram Binay Pandit"
+print(f"नमस्ते {name}, RB Agent code runner executed live!")
+</textarea>
+                </div>
+                <button class="btn-primary-action" onclick="runCodeLive()"><i class="fa-solid fa-play"></i> Run Script</button>
+                <pre id="codeOutputConsole" style="background: #05080E; border: 1px solid var(--border); border-radius: 8px; padding: 10px; font-size: 0.78rem; color: var(--accent-cyan); max-height: 160px; overflow-y: auto;">Terminal ready.</pre>
+            </div>
+        </div>
+
+        <!-- View: File Preview & Notes -->
+        <div class="subview-modal" id="modal-file-preview">
+            <div class="modal-top-bar">
+                <div class="modal-top-title"><i class="fa-solid fa-folder-open" style="color: var(--accent-amber);"></i> File Preview & Notes</div>
+                <button class="modal-close-btn" onclick="closeSubview('file-preview')"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="subview-body">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div style="font-weight: 800; font-size: 0.86rem; color: #FFF;">Persistent SQLite Notes</div>
+                    <button class="btn-run-agent" onclick="loadNotesList()">Refresh</button>
+                </div>
+                <div id="notesContainerList" style="display: flex; flex-direction: column; gap: 8px;">Loading notes...</div>
+            </div>
+        </div>
+
+        <!-- View: Projects -->
+        <div class="subview-modal" id="modal-projects">
+            <div class="modal-top-bar">
+                <div class="modal-top-title"><i class="fa-solid fa-cubes" style="color: var(--accent-purple);"></i> Projects Overview</div>
+                <button class="modal-close-btn" onclick="closeSubview('projects')"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="subview-body">
+                <div class="expanded-agent-card">
+                    <div style="font-weight: 800; font-size: 1rem; color: #FFF;">rb_ai (RB Agent OS)</div>
+                    <div style="font-size: 0.76rem; color: var(--text-muted); margin-top: 2px;">Developed for Ram Binay kumar Pandit</div>
+                    <div style="margin-top: 10px; font-size: 0.78rem; color: #CBD5E1; display: flex; flex-direction: column; gap: 4px;">
+                        <div>• <strong>Host</strong>: Android Termux Linux Userland (aarch64)</div>
+                        <div>• <strong>Storage</strong>: SQLite 3 (<code>rb_agent.db</code>) + Live Supabase Engine</div>
+                        <div>• <strong>Orchestrator</strong>: Jarvis Arc Reactor Core + 5 Sub-Agents</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- View: Chats -->
+        <div class="subview-modal" id="modal-chats">
+            <div class="modal-top-bar">
+                <div class="modal-top-title"><i class="fa-solid fa-comments" style="color: var(--accent-blue);"></i> Chat History</div>
+                <button class="modal-close-btn" onclick="closeSubview('chats')"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="subview-body">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span style="font-size: 0.76rem; color: var(--text-muted);">Stored in SQLite <code>chat_history</code></span>
+                    <button class="btn-run-agent" style="background: #EF4444;" onclick="clearAllChatsLive()">Clear History</button>
+                </div>
+                <div id="chatsModalList" style="display: flex; flex-direction: column; gap: 8px; max-height: 420px; overflow-y: auto;">Loading chats...</div>
+            </div>
+        </div>
+    </div>
 
     <script>
         let currentMaster = "Ram Binay Pandit";
-        let isMicOn = false;
+        let isVoiceMode = false;
         let speechRec = null;
+        let currentModel = "gemini-2.5-flash";
 
         window.addEventListener('DOMContentLoaded', () => {
-            initSystem();
-            setupVoice();
+            initSystemOS();
+            initSpeechRecognizer();
         });
 
-        async function initSystem() {
+        async function initSystemOS() {
             try {
                 const res = await fetch('/api/status');
                 const data = await res.json();
                 if (data.user_name) {
                     currentMaster = data.user_name;
-                    syncUserUI(data.user_name);
+                    syncUserHeaders(data.user_name);
                 }
                 if (data.device && data.device.battery) {
                     const b = data.device.battery;
-                    document.getElementById('topBattStatus').innerText = `${b.percentage || '85'}% LIVE`;
-                }
-                if (data.supabase) {
-                    const sbBox = document.getElementById('supabaseStatusBox');
-                    if (data.supabase.configured) {
-                        sbBox.innerHTML = `<span class="status-badge badge-success">Supabase Connected (${data.supabase.latency_ms || 20}ms)</span>`;
-                    } else {
-                        sbBox.innerHTML = `<span class="status-badge badge-warning">Supabase Unconfigured</span>`;
-                    }
+                    document.getElementById('headerBattStatus').innerText = `${b.percentage || '85'}% LIVE`;
                 }
             } catch(e) {
                 console.log(e);
             }
-            fetchNotes();
-            fetchChats();
-            fetchSkills();
+            loadNotesList();
+            loadSkillsList();
+            loadChatsList();
         }
 
-        function syncUserUI(name) {
-            document.getElementById('sidebarUserName').innerText = name;
-            document.getElementById('greetBannerText').innerText = `नमस्ते, ${name}`;
+        function syncUserHeaders(name) {
+            document.getElementById('greetingText').innerText = `नमस्ते, ${name}`;
+            document.getElementById('drawerUserName').innerText = name;
             const initials = name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
-            document.getElementById('userAvatarPill').innerText = initials || 'RP';
+            document.getElementById('drawerAvatarPill').innerText = initials || 'RP';
         }
 
-        // Navigation
-        function toggleSidebar(open) {
-            document.getElementById('sidebar').classList.toggle('active', open);
-            document.getElementById('sidebarBackdrop').classList.toggle('active', open);
-        }
-
-        function showPanel(panelName) {
-            document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
-            document.querySelectorAll('.sidebar-menu .nav-item').forEach(n => n.classList.remove('active'));
-
-            const p = document.getElementById(`panel-${panelName}`);
-            if (p) p.classList.add('active');
-
-            const links = document.querySelectorAll('.sidebar-menu .nav-item');
-            links.forEach(l => {
-                if (l.innerText.toLowerCase().includes(panelName.replace('-', ' '))) {
-                    l.classList.add('active');
-                }
-            });
-
-            const titles = {
-                'home': 'RB AGENT OS — Home',
-                'web-preview': 'Web Preview & Search',
-                'code-preview': 'Code Preview & Terminal',
-                'file-preview': 'File Preview & Notes',
-                'settings': 'Centralized Configuration Hub',
-                'projects': 'Projects Overview',
-                'skill-add': 'Skill Add & Self-Training',
-                'chats': 'Chat History'
-            };
-            document.getElementById('pageTitleText').innerText = titles[panelName] || 'RB Agent OS';
-            toggleSidebar(false);
-        }
-
-        function setTab(tabId) {
-            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-            document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
-            if (event && event.target) event.target.classList.add('active');
-            const target = document.getElementById(`pane-${tabId}`);
-            if (target) target.classList.add('active');
-        }
-
-        // Sub-Agent Blinking / Pulsing Control
-        function triggerSubAgentGlow(agentTag, processing = true) {
-            const agentMap = {
+        // Sub-Agent Blinking / Pulsing
+        function triggerAgentBlink(tag, isBlinking = true) {
+            const map = {
                 'research': { id: 'card-agent-research', badge: 'badge-research', name: 'Research & Web Agent' },
                 'memory': { id: 'card-agent-memory', badge: 'badge-memory', name: 'Memory & Notes Agent' },
                 'preview': { id: 'card-agent-preview', badge: 'badge-preview', name: 'Preview / View Agent' },
@@ -836,102 +970,94 @@ print(f"नमस्ते {name}, Python sandbox executed successfully!")
                 'coding': { id: 'card-agent-coding', badge: 'badge-coding', name: 'Coding & GitHub Agent' }
             };
 
-            // Clear all pulses first
-            Object.values(agentMap).forEach(a => {
+            Object.values(map).forEach(a => {
                 const el = document.getElementById(a.id);
-                if (el) el.classList.remove('active-pulse');
+                if (el) el.classList.remove('active-blink');
             });
 
-            if (processing && agentMap[agentTag]) {
-                const target = agentMap[agentTag];
+            if (isBlinking && map[tag]) {
+                const target = map[tag];
                 const card = document.getElementById(target.id);
                 const badge = document.getElementById(target.badge);
-                if (card) card.classList.add('active-pulse');
+                if (card) card.classList.add('active-blink');
                 if (badge) badge.innerText = 'ACTIVE';
                 setSubtitle(`${target.name} actively processing...`);
-            } else if (!processing && agentMap[agentTag]) {
-                const target = agentMap[agentTag];
-                const badge = document.getElementById(target.badge);
+            } else if (!isBlinking && map[tag]) {
+                const badge = document.getElementById(map[tag].badge);
                 if (badge) badge.innerText = 'READY';
             }
         }
 
-        // Chat Submission & Autonomous Intent Routing
-        async function sendChatMessage() {
-            const input = document.getElementById('primaryChatInput');
+        // Chat Message Dispatcher from Bottom Dock
+        async function sendDockMessage() {
+            const input = document.getElementById('dockChatInput');
             const text = input.value.trim();
             if (!text) return;
 
-            addMsg('user', text);
+            addChatBubble('user', text);
             input.value = '';
             setSubtitle(`User: "${text}"`);
-            showPanel('home');
 
-            // Quick speculative intent glow
+            // Predict intent for instant visual blinking
             const lower = text.toLowerCase();
-            let predictedTag = 'general';
-            if (lower.includes('सेव') || lower.includes('save') || lower.includes('remember') || lower.includes('याद')) {
-                predictedTag = 'memory';
-            } else if (lower.includes('torch') || lower.includes('battery') || lower.includes('vibrate') || lower.includes('फोन') || lower.includes('call')) {
-                predictedTag = 'automation';
-            } else if (lower.includes('search') || lower.includes('google') || lower.includes('खोजो')) {
-                predictedTag = 'research';
-            } else if (lower.includes('code') || lower.includes('github') || lower.includes('python')) {
-                predictedTag = 'coding';
-            }
-            if (predictedTag !== 'general') triggerSubAgentGlow(predictedTag, true);
+            let predicted = 'core';
+            if (lower.includes('सेव') || lower.includes('save') || lower.includes('remember') || lower.includes('याद')) predicted = 'memory';
+            else if (lower.includes('torch') || lower.includes('battery') || lower.includes('vibrate') || lower.includes('फोन') || lower.includes('call')) predicted = 'automation';
+            else if (lower.includes('search') || lower.includes('google') || lower.includes('खोजो')) predicted = 'research';
+            else if (lower.includes('code') || lower.includes('github') || lower.includes('python')) predicted = 'coding';
+
+            if (predicted !== 'core') triggerAgentBlink(predicted, true);
 
             try {
                 const res = await fetch('/api/chat', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ text, is_voice: isMicOn })
+                    body: JSON.stringify({ text, is_voice: isVoiceMode })
                 });
-                const data = await res.json();
-                const reply = data.response || "Task completed.";
-                const activeTag = data.tag || predictedTag || 'automation';
-                
-                // Blink the confirmed agent
-                triggerSubAgentGlow(activeTag, true);
-                addMsg('assistant', reply, activeTag);
+                const d = await res.json();
+                const reply = d.response || "Task completed.";
+                const activeTag = d.tag || predicted || 'automation';
 
-                // Vocalize reply via TTS
-                speakText(reply, () => {
-                    setSubtitle("Agent finished speaking. Ready for next command.");
-                    setTimeout(() => triggerSubAgentGlow(activeTag, false), 1500);
+                triggerAgentBlink(activeTag, true);
+                addChatBubble('assistant', reply, activeTag);
+
+                speakAloud(reply, () => {
+                    setSubtitle("Agent idle • Ready for next command");
+                    setTimeout(() => triggerAgentBlink(activeTag, false), 1500);
                 });
 
-                fetchNotes();
-                fetchChats();
+                loadNotesList();
+                loadChatsList();
             } catch(e) {
-                addMsg('assistant', 'System Notice: Task processed. ' + e.message, 'automation');
-                triggerSubAgentGlow(predictedTag, false);
+                addChatBubble('assistant', 'Error: ' + e.message, 'core');
+                triggerAgentBlink(predicted, false);
             }
         }
 
-        function onEnterSubmit(e) {
-            if (e.key === 'Enter') sendChatMessage();
+        function onDockEnter(e) {
+            if (e.key === 'Enter') sendDockMessage();
         }
 
-        function addMsg(sender, text, tag = 'automation') {
-            const feed = document.getElementById('chatStream');
+        function addChatBubble(sender, text, tag = 'core') {
+            const feed = document.getElementById('chatFeedStream');
             const div = document.createElement('div');
-            div.className = `msg-bubble ${sender}`;
+            div.className = `chat-bubble ${sender}`;
             if (sender === 'assistant') {
-                div.innerHTML = `<div class="tag-pill pill-${tag}">RB Agent • ${tag.toUpperCase()}</div><div>${text}</div>`;
+                div.innerHTML = `<div class="agent-pill-tag tag-${tag}">RB Agent • ${tag.toUpperCase()}</div><div>${text}</div>`;
             } else {
                 div.innerText = text;
             }
             feed.appendChild(div);
-            feed.scrollTop = feed.scrollHeight;
+            const stage = document.getElementById('appMainStage');
+            stage.scrollTop = stage.scrollHeight;
         }
 
-        function setSubtitle(text) {
-            document.getElementById('subtitlesTicker').innerText = text;
+        function setSubtitle(txt) {
+            document.getElementById('subtitlesTickerText').innerText = txt;
         }
 
         // Voice TTS & Speech Recognition
-        function speakText(text, onDone) {
+        function speakAloud(text, onDone) {
             if (!('speechSynthesis' in window)) {
                 if (onDone) onDone();
                 return;
@@ -939,18 +1065,18 @@ print(f"नमस्ते {name}, Python sandbox executed successfully!")
             window.speechSynthesis.cancel();
             const clean = text.replace(/[*#`_\[\]]/g, '');
             const u = new SpeechSynthesisUtterance(clean);
-            u.lang = document.getElementById('cfgVoiceAccent').value || 'hi-IN';
-            u.pitch = parseFloat(document.getElementById('cfgVoicePitch').value) || 1.0;
-            u.rate = parseFloat(document.getElementById('cfgVoiceRate').value) || 0.95;
+            u.lang = document.getElementById('setVoiceAccent') ? document.getElementById('setVoiceAccent').value : 'hi-IN';
+            u.pitch = parseFloat(document.getElementById('setVoicePitch') ? document.getElementById('setVoicePitch').value : 1.0) || 1.0;
+            u.rate = parseFloat(document.getElementById('setVoiceRate') ? document.getElementById('setVoiceRate').value : 0.95) || 0.95;
             u.onstart = () => setSubtitle(`Speaking: "${clean.substring(0, 48)}..."`);
             u.onend = () => { if (onDone) onDone(); };
             window.speechSynthesis.speak(u);
         }
 
-        function setupVoice() {
-            const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
-            if (SpeechRec) {
-                speechRec = new SpeechRec();
+        function initSpeechRecognizer() {
+            const Speech = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (Speech) {
+                speechRec = new Speech();
                 speechRec.continuous = true;
                 speechRec.interimResults = true;
                 speechRec.lang = 'hi-IN';
@@ -964,273 +1090,202 @@ print(f"नमस्ते {name}, Python sandbox executed successfully!")
                     const lower = transcript.toLowerCase();
                     if (lower.includes("hey rb") || lower.includes("हे आरबी")) {
                         const stripped = transcript.replace(/hey rb|हे आरबी/gi, '').trim();
-                        document.getElementById('primaryChatInput').value = stripped;
-                        if (stripped.length > 2) sendChatMessage();
+                        document.getElementById('dockChatInput').value = stripped;
+                        if (stripped.length > 2) sendDockMessage();
                     }
                 };
             }
         }
 
-        function toggleMic() {
-            const btn = document.getElementById('micBtn');
-            isMicOn = !isMicOn;
-            if (isMicOn) {
-                btn.classList.add('recording');
+        function toggleVoiceMode() {
+            isVoiceMode = !isVoiceMode;
+            const micBtn = document.getElementById('dockMicBtn');
+            if (isVoiceMode) {
+                micBtn.classList.add('recording');
                 if (speechRec) try { speechRec.start(); } catch(e){}
-                setSubtitle("Microphone active • Listening for speech or 'Hey RB'...");
+                setSubtitle("Listening for voice input or 'Hey RB'...");
             } else {
-                btn.classList.remove('recording');
+                micBtn.classList.remove('recording');
                 if (speechRec) try { speechRec.stop(); } catch(e){}
-                setSubtitle("Microphone paused.");
+                setSubtitle("Voice mode paused.");
             }
         }
 
-        // Quick Call Announcement Trigger
-        function testCallAnnouncement() {
-            triggerSubAgentGlow('automation', true);
+        // Model Selector Cycle
+        function cycleGeminiModel() {
+            if (currentModel === "gemini-2.5-flash") {
+                currentModel = "gemini-2.5-pro";
+                document.getElementById('dockModelText').innerText = "Gemini 2.5 Pro";
+            } else {
+                currentModel = "gemini-2.5-flash";
+                document.getElementById('dockModelText').innerText = "Gemini 2.5 Flash";
+            }
+            setSubtitle(`Active Model: ${currentModel}`);
+        }
+
+        // Call Announcement Trigger
+        function triggerCallAnnouncementTest() {
+            triggerAgentBlink('automation', true);
             fetch('/api/call_announcement', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({ caller_name: "Ram Pandit", phone: "+91-9876543210" })
             }).then(r => r.json()).then(d => {
                 setSubtitle(d.announced || "Call announcement triggered.");
-                addMsg('assistant', `📞 ${d.announced}`, 'automation');
-                setTimeout(() => triggerSubAgentGlow('automation', false), 2000);
+                addChatBubble('assistant', `📞 ${d.announced}`, 'automation');
+                setTimeout(() => triggerAgentBlink('automation', false), 2000);
             });
         }
 
-        // Web Preview
-        async function triggerWebPreview() {
-            const q = document.getElementById('webQueryInput').value.trim();
-            const out = document.getElementById('webPreviewOutput');
-            out.innerText = "Searching web...";
-            triggerSubAgentGlow('research', true);
-            try {
-                const res = await fetch('/api/agents', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ agent: 'research', action: 'run', params: { query: q } })
-                });
-                const d = await res.json();
-                const items = d.result.results || [];
-                if (items.length > 0) {
-                    out.innerHTML = items.map(it => `
-                        <div style="background:#0A0F1D; border:1px solid var(--border); border-radius:8px; padding:10px; margin-bottom:8px;">
-                            <div style="font-weight:700; color:var(--accent-cyan); font-size:0.88rem;">${it.title}</div>
-                            <div style="font-size:0.8rem; color:#CBD5E1; margin:4px 0;">${it.snippet}</div>
-                            <a href="${it.url}" target="_blank" style="font-size:0.72rem; color:var(--accent-blue); word-break:break-all;">${it.url}</a>
-                        </div>
-                    `).join('');
-                } else {
-                    out.innerText = "No search results returned.";
-                }
-            } catch(e) {
-                out.innerText = "Error: " + e.message;
-            } finally {
-                triggerSubAgentGlow('research', false);
-            }
-        }
-
-        // Code Execution
-        async function runScriptExecution() {
-            const code = document.getElementById('codeScriptArea').value;
-            const consoleEl = document.getElementById('codeConsoleBox');
-            consoleEl.innerText = "Running Python script...";
-            triggerSubAgentGlow('coding', true);
-            try {
-                const res = await fetch('/api/action', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ action: 'shell', args: { command: `python3 -c ${JSON.stringify(code)}` } })
-                });
-                const d = await res.json();
-                consoleEl.innerText = d.result.stdout || d.result.stderr || "Executed successfully (no stdout).";
-            } catch(e) {
-                consoleEl.innerText = "Error: " + e.message;
-            } finally {
-                triggerSubAgentGlow('coding', false);
-            }
-        }
-
-        // Notes Fetch
-        async function fetchNotes() {
-            const c = document.getElementById('notesListView');
-            try {
-                const res = await fetch('/api/notes');
-                const d = await res.json();
-                if (d.notes && d.notes.length > 0) {
-                    c.innerHTML = d.notes.map(n => `
-                        <div style="background:#0A0F1D; border:1px solid var(--border); border-radius:8px; padding:10px; display:flex; justify-content:space-between; align-items:flex-start;">
-                            <div>
-                                <div style="font-weight:700; color:#FFF; font-size:0.85rem;">${n.title}</div>
-                                <div style="color:var(--text-muted); font-size:0.78rem; margin-top:2px;">${n.content}</div>
-                                <div style="font-size:0.65rem; color:#64748B; margin-top:4px;">${n.created_at}</div>
-                            </div>
-                            <button onclick="deleteNote(${n.id})" style="background:none; border:none; color:#EF4444; cursor:pointer; padding:4px;"><i class="fa-solid fa-trash"></i></button>
-                        </div>
-                    `).join('');
-                } else {
-                    c.innerHTML = '<div style="color:var(--text-muted); font-size:0.8rem;">No notes yet. Type "यह चीज़ सेव कर लो" to add!</div>';
-                }
-            } catch(e) {
-                c.innerHTML = 'Unable to load notes.';
-            }
-        }
-
-        async function deleteNote(id) {
-            await fetch(`/api/notes/${id}`, { method: 'DELETE' });
-            fetchNotes();
-        }
-
-        // Skills Module (Module 7: Skill Add & Self-Training)
-        async function fetchSkills() {
-            const container = document.getElementById('installedSkillsList');
-            try {
-                const res = await fetch('/api/skills');
-                const d = await res.json();
-                if (d.skills && d.skills.length > 0) {
-                    container.innerHTML = d.skills.map(s => `
-                        <div style="background:#0A0F1D; border:1px solid var(--border); border-radius:8px; padding:10px; display:flex; justify-content:space-between; align-items:flex-start;">
-                            <div>
-                                <div style="font-weight:700; color:var(--accent-green); font-size:0.85rem;">${s.name}</div>
-                                <div style="color:var(--text-muted); font-size:0.76rem; margin-top:2px;">${s.description || 'Custom capability'}</div>
-                                <div style="font-size:0.7rem; color:#94A3B8; margin-top:4px; font-family:monospace; background:rgba(255,255,255,0.04); padding:4px 6px; border-radius:4px;">${s.system_prompt.substring(0, 90)}...</div>
-                            </div>
-                            <button onclick="deleteSkill(${s.id})" style="background:none; border:none; color:#EF4444; cursor:pointer; padding:4px;"><i class="fa-solid fa-trash"></i></button>
-                        </div>
-                    `).join('');
-                } else {
-                    container.innerHTML = '<div style="color:var(--text-muted); font-size:0.8rem;">No custom skills trained yet. Use the form above to train RB Agent!</div>';
-                }
-            } catch(e) {
-                container.innerHTML = 'Failed to load skills.';
-            }
-        }
-
-        async function saveSkillLive() {
-            const name = document.getElementById('skillNameInput').value.trim();
-            const desc = document.getElementById('skillDescInput').value.trim();
-            const prompt = document.getElementById('skillPromptInput').value.trim();
-            const examples = document.getElementById('skillExamplesInput').value.trim();
-            const feedback = document.getElementById('skillStatusFeedback');
-
-            if (!name || !prompt) {
-                feedback.innerHTML = '<span class="status-badge badge-danger">Name and Directives are required.</span>';
-                return;
-            }
-
-            feedback.innerHTML = '<span style="color:var(--accent-cyan); font-size:0.75rem;">Training and persisting skill live...</span>';
-            try {
-                const res = await fetch('/api/skills', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ name, description: desc, system_prompt: prompt, examples })
-                });
-                const d = await res.json();
-                if (d.success) {
-                    feedback.innerHTML = `<span class="status-badge badge-success">${d.message}</span>`;
-                    document.getElementById('skillNameInput').value = '';
-                    document.getElementById('skillDescInput').value = '';
-                    document.getElementById('skillPromptInput').value = '';
-                    document.getElementById('skillExamplesInput').value = '';
-                    fetchSkills();
-                } else {
-                    feedback.innerHTML = `<span class="status-badge badge-danger">${d.error || 'Failed'}</span>`;
-                }
-            } catch(e) {
-                feedback.innerHTML = `<span class="status-badge badge-danger">${e.message}</span>`;
-            }
-        }
-
-        async function deleteSkill(id) {
-            await fetch(`/api/skills/${id}`, { method: 'DELETE' });
-            fetchSkills();
-        }
-
-        // Chats History
-        async function fetchChats() {
-            const c = document.getElementById('chatsListContainer');
-            try {
-                const res = await fetch('/api/chats');
-                const d = await res.json();
-                if (d.chats && d.chats.length > 0) {
-                    c.innerHTML = d.chats.map(ch => `
-                        <div style="background:#0A0F1D; border:1px solid var(--border); border-radius:8px; padding:8px 12px; font-size:0.8rem;">
-                            <span style="color:${ch.sender === 'user' ? 'var(--accent-cyan)' : 'var(--accent-green)'}; font-weight:700;">${ch.sender.toUpperCase()}:</span>
-                            <span style="color:#FFF; margin-left:6px;">${ch.message.substring(0, 70)}...</span>
-                        </div>
-                    `).join('');
-                } else {
-                    c.innerHTML = '<div style="color:var(--text-muted); font-size:0.8rem;">No previous chats.</div>';
-                }
-            } catch(e) {
-                c.innerHTML = 'Unable to load chats.';
-            }
-        }
-
-        function searchChats() {
-            const q = document.getElementById('chatSearch').value.toLowerCase();
-            document.querySelectorAll('#chatsListContainer > div').forEach(el => {
-                el.style.display = el.innerText.toLowerCase().includes(q) ? 'block' : 'none';
+        function triggerCameraCapture() {
+            fetch('/api/action', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ action: 'shell', args: { command: 'termux-camera-photo ~/rb_ai/latest.jpg' } })
             });
+            setSubtitle("Camera snapshot requested via Termux API.");
         }
 
-        async function clearAllChats() {
-            if (!confirm("Clear all persistent chats?")) return;
-            await fetch('/api/chats', { method: 'DELETE' });
-            fetchChats();
+        // Sub-Agents Expanded Modal
+        function openAgentsExpandedModal(preselectTag) {
+            document.getElementById('agentsExpandedModal').classList.add('active');
+            if (preselectTag) triggerAgentBlink(preselectTag, true);
+        }
+        function closeAgentsExpandedModal() {
+            document.getElementById('agentsExpandedModal').classList.remove('active');
         }
 
-        function resetNewChat() {
-            document.getElementById('chatStream').innerHTML = `
-                <div class="msg-bubble assistant">
-                    <div class="tag-pill pill-automation">RB System</div>
-                    <div>नमस्ते Ram Binay Pandit! New chat session initialized. What task shall we tackle?</div>
-                </div>
-            `;
-            showPanel('home');
+        async function executeWsResearch() {
+            const q = document.getElementById('wsResearchInput').value;
+            const out = document.getElementById('wsResearchOutput');
+            out.style.display = 'block'; out.innerText = 'Searching web...';
+            triggerAgentBlink('research', true);
+            const res = await fetch('/api/agents', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ agent: 'research', action: 'run', params: { query: q } })
+            });
+            const d = await res.json();
+            out.innerText = JSON.stringify(d.result, null, 2);
+            triggerAgentBlink('research', false);
         }
 
-        // Real Credential Handshakes
-        async function testTelegramHandshake() {
-            const token = document.getElementById('cfgTelegramToken').value.trim();
-            const box = document.getElementById('telegramStatusBox');
-            box.innerText = "Testing handshake...";
+        async function executeWsMemory() {
+            const t = document.getElementById('wsMemoryInput').value;
+            const out = document.getElementById('wsMemoryOutput');
+            out.style.display = 'block'; out.innerText = 'Storing note...';
+            triggerAgentBlink('memory', true);
+            const res = await fetch('/api/agents', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ agent: 'memory', action: 'run', params: { text: t } })
+            });
+            const d = await res.json();
+            out.innerText = d.result.message || JSON.stringify(d.result);
+            triggerAgentBlink('memory', false);
+            loadNotesList();
+        }
+
+        async function executeWsPreview() {
+            const target = document.getElementById('wsPreviewInput').value;
+            const out = document.getElementById('wsPreviewOutput');
+            out.style.display = 'block'; out.innerText = 'Loading preview...';
+            triggerAgentBlink('preview', true);
+            const res = await fetch('/api/agents', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ agent: 'preview', action: 'run', params: { target } })
+            });
+            const d = await res.json();
+            out.innerText = JSON.stringify(d.result, null, 2);
+            triggerAgentBlink('preview', false);
+        }
+
+        async function triggerHardwareAction(action) {
+            triggerAgentBlink('automation', true);
+            const res = await fetch('/api/action', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ action: action === 'torch' ? 'torch' : action, args: { enabled: true, duration: 300 } })
+            });
+            const d = await res.json();
+            const out = document.getElementById('wsAutomationOutput');
+            out.style.display = 'block';
+            out.innerText = JSON.stringify(d.result, null, 2);
+            setTimeout(() => triggerAgentBlink('automation', false), 1500);
+        }
+
+        async function executeWsGithub() {
+            const u = document.getElementById('wsCodingInput').value;
+            const out = document.getElementById('wsCodingOutput');
+            out.style.display = 'block'; out.innerText = 'Fetching repos...';
+            triggerAgentBlink('coding', true);
+            const res = await fetch(`/api/github?username=${encodeURIComponent(u)}`);
+            const d = await res.json();
+            out.innerText = JSON.stringify(d.repositories || d.error, null, 2);
+            triggerAgentBlink('coding', false);
+        }
+
+        // Subviews Management
+        function openSubview(viewId) {
+            toggleDrawer(false);
+            const m = document.getElementById(`modal-${viewId}`);
+            if (m) m.classList.add('active');
+        }
+        function closeSubview(viewId) {
+            const m = document.getElementById(`modal-${viewId}`);
+            if (m) m.classList.remove('active');
+        }
+
+        function toggleDrawer(open) {
+            document.getElementById('mainSidebarDrawer').classList.toggle('active', open);
+            document.getElementById('drawerBackdrop').classList.toggle('active', open);
+        }
+
+        function navigateDrawer(id) {
+            toggleDrawer(false);
+            if (id === 'home') {
+                document.querySelectorAll('.subview-modal').forEach(m => m.classList.remove('active'));
+            }
+        }
+
+        function switchSettingTab(tab) {
+            document.querySelectorAll('.stab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.stab-pane').forEach(p => p.classList.remove('active'));
+            if (event && event.target) event.target.classList.add('active');
+            const target = document.getElementById(`spane-${tab}`);
+            if (target) target.classList.add('active');
+        }
+
+        // Live Credential Handshakes
+        async function handshakeTelegram() {
+            const token = document.getElementById('setTgToken').value.trim();
+            const fb = document.getElementById('tgStatusFeedback');
+            fb.innerText = 'Testing handshake...';
             const res = await fetch('/api/test_credentials', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({ service: 'telegram', credentials: { token } })
             });
             const d = await res.json();
-            box.innerHTML = d.success
-                ? `<span class="status-badge badge-success">${d.message}</span>`
-                : `<span class="status-badge badge-danger">${d.error}</span>`;
+            fb.innerHTML = d.success ? `<span class="status-chip-tag chip-success">${d.message}</span>` : `<span class="status-chip-tag chip-danger">${d.error}</span>`;
         }
 
-        async function startTelegramBot() {
-            const token = document.getElementById('cfgTelegramToken').value.trim();
+        async function controlTelegram(action) {
+            const token = document.getElementById('setTgToken').value.trim();
             const res = await fetch('/api/telegram', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ action: 'start', token })
+                body: JSON.stringify({ action, token })
             });
             const d = await res.json();
-            document.getElementById('telegramStatusBox').innerText = d.message || d.error;
+            document.getElementById('tgStatusFeedback').innerText = d.message || d.error || "Updated";
         }
 
-        async function stopTelegramBot() {
-            const res = await fetch('/api/telegram', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ action: 'stop' })
-            });
-            document.getElementById('telegramStatusBox').innerText = "Bot stopped.";
-        }
-
-        async function launchWhatsApp() {
-            const phone = document.getElementById('cfgWaPhone').value.trim();
-            const msg = document.getElementById('cfgWaMsg').value.trim();
-            if (!phone) return alert("Enter target phone number");
+        async function launchWaBridge() {
+            const phone = document.getElementById('setWaPhone').value.trim();
+            const msg = document.getElementById('setWaMsg').value.trim();
+            if (!phone) return alert("Enter phone number");
             const res = await fetch('/api/whatsapp', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
@@ -1240,71 +1295,62 @@ print(f"नमस्ते {name}, Python sandbox executed successfully!")
             if (d.url) window.open(d.url, '_blank');
         }
 
-        async function testGitHubHandshake() {
-            const user = document.getElementById('cfgGhUser').value.trim();
-            const token = document.getElementById('cfgGhToken').value.trim();
-            const label = document.getElementById('ghSyncStatus');
-            label.innerText = "Testing handshake with GitHub...";
+        async function handshakeGitHub() {
+            const username = document.getElementById('setGhUser').value.trim();
+            const token = document.getElementById('setGhToken').value.trim();
+            const fb = document.getElementById('ghStatusFeedback');
+            fb.innerText = 'Testing handshake...';
             const res = await fetch('/api/test_credentials', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ service: 'github', credentials: { username: user, token } })
+                body: JSON.stringify({ service: 'github', credentials: { username, token } })
             });
             const d = await res.json();
-            label.innerHTML = d.success
-                ? `<span class="status-badge badge-success">${d.message}</span>`
-                : `<span class="status-badge badge-danger">${d.error}</span>`;
+            fb.innerHTML = d.success ? `<span class="status-chip-tag chip-success">${d.message}</span>` : `<span class="status-chip-tag chip-danger">${d.error}</span>`;
         }
 
-        async function testSupabaseHandshake() {
-            const url = document.getElementById('cfgSupabaseUrl').value.trim();
-            const key = document.getElementById('cfgSupabaseKey').value.trim();
-            const box = document.getElementById('supabaseStatusBox');
-            box.innerText = "Testing Supabase handshake...";
+        async function handshakeSupabase() {
+            const url = document.getElementById('setSbUrl').value.trim();
+            const key = document.getElementById('setSbKey').value.trim();
+            const fb = document.getElementById('sbStatusFeedback');
+            fb.innerText = 'Testing Supabase handshake...';
             const res = await fetch('/api/test_credentials', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({ service: 'supabase', credentials: { url, key } })
             });
             const d = await res.json();
-            box.innerHTML = d.success
-                ? `<span class="status-badge badge-success">${d.message}</span>`
-                : `<span class="status-badge badge-danger">${d.error}</span>`;
+            fb.innerHTML = d.success ? `<span class="status-chip-tag chip-success">${d.message}</span>` : `<span class="status-chip-tag chip-danger">${d.error}</span>`;
         }
 
-        async function syncSupabaseData() {
-            const box = document.getElementById('supabaseStatusBox');
-            box.innerText = "Syncing SQLite data to Supabase cloud...";
+        async function syncSupabaseCloud() {
+            const fb = document.getElementById('sbStatusFeedback');
+            fb.innerText = 'Syncing SQLite to Supabase...';
             const res = await fetch('/api/supabase/sync', { method: 'POST' });
             const d = await res.json();
-            box.innerHTML = d.success
-                ? `<span class="status-badge badge-success">${d.message}</span>`
-                : `<span class="status-badge badge-danger">${d.error}</span>`;
+            fb.innerHTML = d.success ? `<span class="status-chip-tag chip-success">${d.message}</span>` : `<span class="status-chip-tag chip-danger">${d.error}</span>`;
         }
 
-        async function testGeminiHandshake() {
-            const key = document.getElementById('cfgGeminiKey').value.trim();
-            const box = document.getElementById('geminiStatusBox');
-            box.innerText = "Testing Gemini API key handshake...";
+        async function handshakeGemini() {
+            const key = document.getElementById('setGeminiKey').value.trim();
+            const fb = document.getElementById('geminiStatusFeedback');
+            fb.innerText = 'Testing Gemini API key...';
             const res = await fetch('/api/test_credentials', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({ service: 'gemini', credentials: { api_key: key } })
             });
             const d = await res.json();
-            box.innerHTML = d.success
-                ? `<span class="status-badge badge-success">${d.message}</span>`
-                : `<span class="status-badge badge-danger">${d.error}</span>`;
+            fb.innerHTML = d.success ? `<span class="status-chip-tag chip-success">${d.message}</span>` : `<span class="status-chip-tag chip-danger">${d.error}</span>`;
         }
 
-        async function saveConfigurations() {
-            const accent = document.getElementById('cfgVoiceAccent').value;
-            const pitch = document.getElementById('cfgVoicePitch').value;
-            const rate = document.getElementById('cfgVoiceRate').value;
-            const wake = document.getElementById('cfgWakePhrase').checked;
-            const call = document.getElementById('cfgCallAnnounce').checked;
-            const geminiKey = document.getElementById('cfgGeminiKey').value.trim();
-            const geminiModel = document.getElementById('cfgGeminiModel').value;
+        async function saveAllSettingsLive() {
+            const accent = document.getElementById('setVoiceAccent').value;
+            const pitch = document.getElementById('setVoicePitch').value;
+            const rate = document.getElementById('setVoiceRate').value;
+            const wake = document.getElementById('setWakeWord').checked;
+            const call = document.getElementById('setCallAnnounce').checked;
+            const gKey = document.getElementById('setGeminiKey').value.trim();
 
             await fetch('/api/settings', {
                 method: 'POST',
@@ -1314,30 +1360,191 @@ print(f"नमस्ते {name}, Python sandbox executed successfully!")
                     voice_pitch: pitch,
                     voice_rate: rate,
                     wake_phrase_enabled: wake ? 'true' : 'false',
-                    call_announcement_enabled: call ? 'true' : 'false',
-                    gemini_model: geminiModel
+                    call_announcement_enabled: call ? 'true' : 'false'
                 })
             });
 
-            if (geminiKey) {
+            if (gKey) {
                 await fetch('/api/config', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ gemini_api_key: geminiKey })
+                    body: JSON.stringify({ gemini_api_key: gKey })
                 });
             }
 
-            alert("All configurations saved successfully to local SQLite & Supabase!");
-            showPanel('home');
+            alert("Configurations saved to SQLite & Supabase!");
+            closeSubview('settings');
         }
 
-        function captureSnapshot() {
-            fetch('/api/action', {
+        // Skills Management
+        async function loadSkillsList() {
+            const container = document.getElementById('activeSkillsList');
+            try {
+                const res = await fetch('/api/skills');
+                const d = await res.json();
+                if (d.skills && d.skills.length > 0) {
+                    container.innerHTML = d.skills.map(s => `
+                        <div style="background:#0F1A34; border:1px solid var(--border); border-radius:8px; padding:10px; display:flex; justify-content:space-between; align-items:flex-start;">
+                            <div>
+                                <div style="font-weight:800; color:var(--accent-green); font-size:0.84rem;">${s.name}</div>
+                                <div style="color:var(--text-muted); font-size:0.75rem; margin-top:2px;">${s.description || 'Specialized Directive'}</div>
+                                <div style="font-size:0.68rem; color:#94A3B8; margin-top:4px; font-family:monospace; background:rgba(255,255,255,0.04); padding:3px 6px; border-radius:4px;">${s.system_prompt.substring(0, 80)}...</div>
+                            </div>
+                            <button onclick="deleteSkillItem(${s.id})" style="background:none; border:none; color:#EF4444; cursor:pointer; padding:4px;"><i class="fa-solid fa-trash"></i></button>
+                        </div>
+                    `).join('');
+                } else {
+                    container.innerHTML = '<div style="color:var(--text-muted); font-size:0.78rem;">No custom skills yet. Use the form above to train RB Agent!</div>';
+                }
+            } catch(e) {
+                container.innerHTML = 'Failed to load skills.';
+            }
+        }
+
+        async function saveSkillTraining() {
+            const name = document.getElementById('skillNameInput').value.trim();
+            const desc = document.getElementById('skillDescInput').value.trim();
+            const prompt = document.getElementById('skillPromptInput').value.trim();
+            const fb = document.getElementById('skillFeedbackMsg');
+
+            if (!name || !prompt) {
+                fb.innerHTML = '<span class="status-chip-tag chip-danger">Name and Directives required.</span>';
+                return;
+            }
+
+            const res = await fetch('/api/skills', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ action: 'shell', args: { command: 'termux-camera-photo ~/rb_ai/latest.jpg' } })
+                body: JSON.stringify({ name, description: desc, system_prompt: prompt })
             });
-            setSubtitle("Camera snapshot requested via Termux.");
+            const d = await res.json();
+            if (d.success) {
+                fb.innerHTML = `<span class="status-chip-tag chip-success">${d.message}</span>`;
+                document.getElementById('skillNameInput').value = '';
+                document.getElementById('skillDescInput').value = '';
+                document.getElementById('skillPromptInput').value = '';
+                loadSkillsList();
+            } else {
+                fb.innerHTML = `<span class="status-chip-tag chip-danger">${d.error || 'Failed'}</span>`;
+            }
+        }
+
+        async function deleteSkillItem(id) {
+            await fetch(`/api/skills/${id}`, { method: 'DELETE' });
+            loadSkillsList();
+        }
+
+        // Notes Management
+        async function loadNotesList() {
+            const c = document.getElementById('notesContainerList');
+            try {
+                const res = await fetch('/api/notes');
+                const d = await res.json();
+                if (d.notes && d.notes.length > 0) {
+                    c.innerHTML = d.notes.map(n => `
+                        <div style="background:#0F1A34; border:1px solid var(--border); border-radius:8px; padding:10px; display:flex; justify-content:space-between; align-items:flex-start;">
+                            <div>
+                                <div style="font-weight:700; color:#FFF; font-size:0.84rem;">${n.title}</div>
+                                <div style="color:var(--text-muted); font-size:0.76rem; margin-top:2px;">${n.content}</div>
+                                <div style="font-size:0.65rem; color:#64748B; margin-top:4px;">${n.created_at}</div>
+                            </div>
+                            <button onclick="deleteNoteItem(${n.id})" style="background:none; border:none; color:#EF4444; cursor:pointer; padding:4px;"><i class="fa-solid fa-trash"></i></button>
+                        </div>
+                    `).join('');
+                } else {
+                    c.innerHTML = '<div style="color:var(--text-muted); font-size:0.78rem;">No notes stored. Say "यह चीज़ सेव कर लो" to create one!</div>';
+                }
+            } catch(e) {
+                c.innerHTML = 'Unable to load notes.';
+            }
+        }
+
+        async function deleteNoteItem(id) {
+            await fetch(`/api/notes/${id}`, { method: 'DELETE' });
+            loadNotesList();
+        }
+
+        // Web Preview & Code Runner
+        async function runWebPreviewSearch() {
+            const q = document.getElementById('webPreviewQuery').value;
+            const box = document.getElementById('webPreviewOutputBox');
+            box.innerText = "Searching web...";
+            const res = await fetch('/api/agents', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ agent: 'research', action: 'run', params: { query: q } })
+            });
+            const d = await res.json();
+            const items = d.result.results || [];
+            if (items.length > 0) {
+                box.innerHTML = items.map(it => `
+                    <div style="background:#0F1A34; border:1px solid var(--border); border-radius:8px; padding:8px; margin-bottom:6px;">
+                        <div style="font-weight:700; color:var(--accent-cyan); font-size:0.84rem;">${it.title}</div>
+                        <div style="font-size:0.76rem; color:#CBD5E1; margin:3px 0;">${it.snippet}</div>
+                        <a href="${it.url}" target="_blank" style="font-size:0.7rem; color:var(--accent-blue); word-break:break-all;">${it.url}</a>
+                    </div>
+                `).join('');
+            } else {
+                box.innerText = "No search results returned.";
+            }
+        }
+
+        async function runCodeLive() {
+            const code = document.getElementById('codeRunnerArea').value;
+            const c = document.getElementById('codeOutputConsole');
+            c.innerText = "Running Python script...";
+            const res = await fetch('/api/action', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ action: 'shell', args: { command: `python3 -c ${JSON.stringify(code)}` } })
+            });
+            const d = await res.json();
+            c.innerText = d.result.stdout || d.result.stderr || "Executed (No output)";
+        }
+
+        // Chats History
+        async function loadChatsList() {
+            const c = document.getElementById('chatsModalList');
+            try {
+                const res = await fetch('/api/chats');
+                const d = await res.json();
+                if (d.chats && d.chats.length > 0) {
+                    c.innerHTML = d.chats.map(ch => `
+                        <div style="background:#0F1A34; border:1px solid var(--border); border-radius:8px; padding:8px 10px; font-size:0.78rem;">
+                            <span style="color:${ch.sender === 'user' ? 'var(--accent-cyan)' : 'var(--accent-green)'}; font-weight:700;">${ch.sender.toUpperCase()}:</span>
+                            <span style="color:#FFF; margin-left:6px;">${ch.message.substring(0, 65)}...</span>
+                        </div>
+                    `).join('');
+                } else {
+                    c.innerHTML = '<div style="color:var(--text-muted); font-size:0.78rem;">No previous chats.</div>';
+                }
+            } catch(e) {
+                c.innerHTML = 'Unable to load chats.';
+            }
+        }
+
+        async function clearAllChatsLive() {
+            if (!confirm("Clear all persistent chat messages?")) return;
+            await fetch('/api/chats', { method: 'DELETE' });
+            loadChatsList();
+        }
+
+        function filterDrawerChats() {
+            const q = document.getElementById('drawerSearchInput').value.toLowerCase();
+            document.querySelectorAll('#chatsModalList > div').forEach(el => {
+                el.style.display = el.innerText.toLowerCase().includes(q) ? 'block' : 'none';
+            });
+        }
+
+        function startNewChatSession() {
+            toggleDrawer(false);
+            document.getElementById('chatFeedStream').innerHTML = `
+                <div class="chat-bubble assistant">
+                    <div class="agent-pill-tag tag-core">RB System</div>
+                    <div>नमस्ते Ram Binay Pandit! New chat session started. What shall we achieve today?</div>
+                </div>
+            `;
+            navigateDrawer('home');
         }
     </script>
 </body>

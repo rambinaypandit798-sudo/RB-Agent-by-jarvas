@@ -103,6 +103,25 @@ class RBServer:
                     })
                     self._send_json(res)
 
+                elif path == "/manifest.json":
+                    manifest = {
+                        "name": "RB Agent OS",
+                        "short_name": "RB Agent",
+                        "start_url": "/",
+                        "display": "standalone",
+                        "background_color": "#060A13",
+                        "theme_color": "#070B14",
+                        "description": "Autonomous Operating System Agent for Ram Binay kumar Pandit",
+                        "icons": [
+                            {
+                                "src": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/svgs/solid/atom.svg",
+                                "sizes": "192x192 512x512",
+                                "type": "image/svg+xml"
+                            }
+                        ]
+                    }
+                    self._send_json(manifest)
+
                 elif path == "/" or path == "/app":
                     from core.web_ui import WEB_HTML
                     self.send_response(200)
