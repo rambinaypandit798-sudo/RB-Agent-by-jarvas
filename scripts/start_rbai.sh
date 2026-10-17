@@ -10,5 +10,5 @@ fi
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$SCRIPT_DIR"
 
-echo "🚀 Starting RB.AI Server on 0.0.0.0:8765..."
+echo "🚀 Starting RB.AI Server on 127.0.0.1:8765..."
 python3 cli.py --server
