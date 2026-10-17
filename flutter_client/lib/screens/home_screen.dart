@@ -210,7 +210,7 @@ class _HomeScreenState extends State<HomeScreen> {
         elevation: 0.5,
         title: const Row(
           children: [
-            Icon(Icons.atom, color: Color(0xFF0077FE), size: 22),
+            Icon(Icons.hub, color: Color(0xFF0077FE), size: 22),
             SizedBox(width: 8),
             Text(
               "RB.AGENT",

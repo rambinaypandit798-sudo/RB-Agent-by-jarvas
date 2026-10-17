@@ -344,7 +344,7 @@ class RBAIService extends ChangeNotifier {
       ).timeout(const Duration(seconds: 20));
       return json.decode(utf8.decode(res.bodyBytes));
     } catch (e) {
-      return {"error": str(e)};
+      return {"error": e.toString()};
     }
   }
 

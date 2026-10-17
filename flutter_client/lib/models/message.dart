@@ -11,13 +11,16 @@ class ChatMessage {
   final DateTime timestamp;
 
   ChatMessage({
-    required this.id,
-    required this.role,
+    String? id,
+    MessageRole? role,
+    bool? isUser,
     required this.text,
     this.imageBytes,
     this.toolCalls,
     DateTime? timestamp,
-  }) : timestamp = timestamp ?? DateTime.now();
+  })  : id = id ?? DateTime.now().millisecondsSinceEpoch.toString(),
+        role = role ?? ((isUser == false) ? MessageRole.assistant : MessageRole.user),
+        timestamp = timestamp ?? DateTime.now();
 
   bool get isUser => role == MessageRole.user;
 }
