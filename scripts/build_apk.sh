@@ -7,9 +7,9 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 FLUTTER_DIR="$SCRIPT_DIR/flutter_client"
 
 if ! command -v flutter >/dev/null 2>&1; then
-    echo "❌ Error: 'flutter' command not found."
-    echo "💡 Note: On Termux/Android, compile the APK via the automated GitHub Actions workflow (.github/workflows/build_apk.yml) or run on any Linux/macOS/Windows desktop with Flutter SDK installed."
-    exit 1
+    echo "⚡ Flutter SDK not installed in local environment (Termux)."
+    echo "🚀 Delegating build to automated GitHub Actions Cloud CI/CD pipeline..."
+    exec python3 "$SCRIPT_DIR/scripts/cloud_build_apk.py"
 fi
 
 cd "$FLUTTER_DIR"
