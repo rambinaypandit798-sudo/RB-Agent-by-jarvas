@@ -9,7 +9,9 @@ Real, working logic for:
 """
 
 import re
+import sys
 import json
+import subprocess
 import urllib.request
 import urllib.parse
 import urllib.error
@@ -17,9 +19,37 @@ from typing import Dict, Any, List, Optional
 from core.database import db
 from core.automation import automation
 
+import ipaddress
+import socket
+
 class SubAgentsEngine:
     def __init__(self):
         pass
+
+    def _is_safe_url(self, url: str) -> bool:
+        """Validates that a URL does not target loopback or private network addresses (SSRF Protection)."""
+        try:
+            parsed = urllib.parse.urlparse(url)
+            if parsed.scheme not in ("http", "https"):
+                return False
+            host = parsed.hostname.lower() if parsed.hostname else ""
+            if not host or host in ("localhost", "::1"):
+                return False
+            try:
+                ip = ipaddress.ip_address(host)
+                if ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_reserved or ip.is_multicast:
+                    return False
+            except ValueError:
+                try:
+                    resolved_ip = socket.gethostbyname(host)
+                    ip = ipaddress.ip_address(resolved_ip)
+                    if ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_reserved or ip.is_multicast:
+                        return False
+                except Exception:
+                    pass
+            return True
+        except Exception:
+            return False
 
     # =========================================================================
     # 1. RESEARCH & WEB AGENT
@@ -183,6 +213,13 @@ class SubAgentsEngine:
         """
         target = target.strip()
         if target.startswith("http://") or target.startswith("https://"):
+            if not self._is_safe_url(target):
+                return {
+                    "success": False,
+                    "type": "web_url",
+                    "url": target,
+                    "error": "URL blocked: Access to local or private network addresses is restricted (SSRF protection)."
+                }
             try:
                 req = urllib.request.Request(
                     target,
@@ -285,10 +322,26 @@ class SubAgentsEngine:
             code = params.get("code", "")
             lang = params.get("lang", "python")
             if lang == "python":
-                cmd = f"python3 -c {json.dumps(code)}"
+                try:
+                    res = subprocess.run(
+                        [sys.executable, "-c", code],
+                        shell=False,
+                        capture_output=True,
+                        text=True,
+                        timeout=15
+                    )
+                    return {
+                        "success": res.returncode == 0,
+                        "stdout": res.stdout[:50000],
+                        "stderr": res.stderr[:50000],
+                        "returncode": res.returncode
+                    }
+                except subprocess.TimeoutExpired:
+                    return {"success": False, "error": "Execution timed out (15s limit)"}
+                except Exception as e:
+                    return {"success": False, "error": str(e)}
             else:
-                cmd = code
-            return automation.execute_shell(cmd)
+                return automation.execute_shell(code)
 
         elif action == "fetch_github_repos":
             username = params.get("username", "")

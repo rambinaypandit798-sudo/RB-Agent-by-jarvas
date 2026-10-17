@@ -10,6 +10,7 @@ import sqlite3
 import json
 from datetime import datetime
 from typing import Dict, Any, List, Optional
+from contextlib import contextmanager
 from core.supabase_client import supabase
 
 DB_DIR = os.path.expanduser("~/rb_ai/data")
@@ -22,10 +23,16 @@ class Database:
         self._init_db()
         self._init_supabase_from_storage()
 
-    def _get_connection(self) -> sqlite3.Connection:
-        conn = sqlite3.connect(self.db_path)
+    @contextmanager
+    def _get_connection(self):
+        conn = sqlite3.connect(self.db_path, timeout=20.0)
         conn.row_factory = sqlite3.Row
-        return conn
+        conn.execute("PRAGMA journal_mode = WAL;")
+        conn.execute("PRAGMA busy_timeout = 20000;")
+        try:
+            yield conn
+        finally:
+            conn.close()
 
     def _init_db(self):
         with self._get_connection() as conn:

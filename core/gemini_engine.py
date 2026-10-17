@@ -216,7 +216,11 @@ class GeminiEngine:
 
         return self._run_model_turn()
 
-    def _run_model_turn(self, depth: int = 0) -> Dict[str, Any]:
+    def _run_model_turn(self, depth: int = 0, attempted_models: Optional[set] = None) -> Dict[str, Any]:
+        if attempted_models is None:
+            attempted_models = set()
+        attempted_models.add(self.model)
+
         if depth > 4:
             return {"text": "Tool call depth limit reached.", "tool_calls": []}
 
@@ -253,11 +257,11 @@ class GeminiEngine:
             if e.code == 404:
                 candidates = ["gemini-3-flash-preview", "gemini-3.5-flash-lite", "gemini-flash-latest", "gemini-1.5-flash"]
                 for candidate in candidates:
-                    if candidate != self.model:
+                    if candidate not in attempted_models:
                         print(f"[GeminiEngine] Model '{self.model}' returned 404. Auto-recovering with '{candidate}'...")
                         self.model = candidate
-                        return self._run_model_turn(depth=depth)
-            err_body = e.read().decode("utf-8")
+                        return self._run_model_turn(depth=depth, attempted_models=attempted_models)
+            err_body = e.read().decode("utf-8", errors="ignore")
             return {"text": f"Gemini API Error ({e.code}): {err_body}", "tool_calls": []}
         except Exception as e:
             return {"text": f"Network Error contacting Gemini: {str(e)}", "tool_calls": []}

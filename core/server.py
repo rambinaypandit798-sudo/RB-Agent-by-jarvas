@@ -9,8 +9,8 @@ import base64
 import urllib.parse
 import urllib.request
 import urllib.error
-from http.server import HTTPServer, BaseHTTPRequestHandler
-from typing import Dict, Any
+from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
+from typing import Dict, Any, Optional
 from core.assistant import RBAssistant
 from core.automation import automation
 from core.database import db
@@ -19,26 +19,58 @@ from core.supabase_client import supabase
 from core.telegram_bot import telegram_bot
 from core.whatsapp_bridge import whatsapp_bridge
 
+def sanitize_settings(settings: Dict[str, Any]) -> Dict[str, Any]:
+    """Masks sensitive credentials and API keys in settings payloads."""
+    sanitized = {}
+    sensitive_keywords = ("key", "token", "secret", "password", "pat", "auth")
+    for k, v in settings.items():
+        k_lower = str(k).lower()
+        if any(sk in k_lower for sk in sensitive_keywords) and v:
+            v_str = str(v)
+            if len(v_str) > 8:
+                sanitized[k] = v_str[:4] + "..." + v_str[-4:]
+            else:
+                sanitized[k] = "******"
+        else:
+            sanitized[k] = v
+    return sanitized
+
 class RBServer:
     """Production HTTP API Server for RB Agent."""
 
-    def __init__(self, assistant: RBAssistant, host: str = "0.0.0.0", port: int = 8765):
+    def __init__(self, assistant: RBAssistant, host: Optional[str] = None, port: Optional[int] = None):
         self.assistant = assistant
-        self.host = host
-        self.port = port
+        self.host = host or getattr(assistant.config, "HOST", "127.0.0.1")
+        self.port = port or getattr(assistant.config, "PORT", 8765)
 
     def run(self):
         assistant_ref = self.assistant
 
         class RequestHandler(BaseHTTPRequestHandler):
+            def _is_authorized(self) -> bool:
+                api_secret = getattr(assistant_ref.config, "API_SECRET_KEY", "")
+                if not api_secret:
+                    return True
+                auth_header = self.headers.get("Authorization", "")
+                api_key_header = self.headers.get("X-API-Key", "")
+                if auth_header.startswith("Bearer "):
+                    token = auth_header[7:].strip()
+                    if token == api_secret:
+                        return True
+                if api_key_header and api_key_header.strip() == api_secret:
+                    return True
+                return False
+
             def _send_json(self, data: Dict[str, Any], status: int = 200):
+                payload = json.dumps(data, ensure_ascii=False).encode("utf-8")
                 self.send_response(status)
                 self.send_header("Content-Type", "application/json; charset=utf-8")
+                self.send_header("Content-Length", str(len(payload)))
                 self.send_header("Access-Control-Allow-Origin", "*")
                 self.send_header("Access-Control-Allow-Methods", "GET, POST, DELETE, OPTIONS")
-                self.send_header("Access-Control-Allow-Headers", "Content-Type, Authorization")
+                self.send_header("Access-Control-Allow-Headers", "Content-Type, Authorization, X-API-Key")
                 self.end_headers()
-                self.wfile.write(json.dumps(data, ensure_ascii=False).encode("utf-8"))
+                self.wfile.write(payload)
 
             def do_OPTIONS(self):
                 self._send_json({"status": "ok"})
@@ -47,6 +79,44 @@ class RBServer:
                 parsed = urllib.parse.urlparse(self.path)
                 path = parsed.path
                 query = urllib.parse.parse_qs(parsed.query)
+
+                # Public static assets
+                if path in ("/", "/app"):
+                    from core.web_ui import WEB_HTML
+                    content = WEB_HTML.encode("utf-8")
+                    self.send_response(200)
+                    self.send_header("Content-Type", "text/html; charset=utf-8")
+                    self.send_header("Content-Length", str(len(content)))
+                    self.end_headers()
+                    self.wfile.write(content)
+                    return
+
+                if path == "/manifest.json":
+                    manifest = {
+                        "name": "RB Agent OS",
+                        "short_name": "RB Agent",
+                        "start_url": "/",
+                        "display": "standalone",
+                        "background_color": "#060A13",
+                        "theme_color": "#070B14",
+                        "description": "Autonomous Operating System Agent for Ram Binay kumar Pandit",
+                        "icons": [
+                            {
+                                "src": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/svgs/solid/atom.svg",
+                                "sizes": "192x192 512x512",
+                                "type": "image/svg+xml"
+                            }
+                        ]
+                    }
+                    self._send_json(manifest)
+                    return
+
+                client_ip = self.client_address[0] if self.client_address else ""
+                is_local = client_ip in ("127.0.0.1", "::1", "localhost")
+                api_secret = getattr(assistant_ref.config, "API_SECRET_KEY", "")
+                if api_secret and not is_local and not self._is_authorized():
+                    self._send_json({"error": "Unauthorized"}, status=401)
+                    return
 
                 if path == "/api/status":
                     user_name = db.get_setting("user_name", "Ram Binay Pandit")
@@ -58,8 +128,8 @@ class RBServer:
                         "model": assistant_ref.config.GEMINI_MODEL,
                         "has_api_key": bool(assistant_ref.config.GEMINI_API_KEY),
                         "telegram": telegram_bot.get_status(),
-                        "supabase": supabase.test_connection(),
-                        "settings": db.get_all_settings(),
+                        "supabase": {"configured": supabase.is_configured()},
+                        "settings": sanitize_settings(db.get_all_settings()),
                         "skills_count": len(db.get_skills())
                     }
                     self._send_json(status)
@@ -69,7 +139,7 @@ class RBServer:
                     self._send_json({
                         "user_name": user_name,
                         "greeting": f"नमस्ते, {user_name} आज आपका क्या प्लान है",
-                        "settings": db.get_all_settings()
+                        "settings": sanitize_settings(db.get_all_settings())
                     })
 
                 elif path == "/api/battery":
@@ -103,36 +173,17 @@ class RBServer:
                     })
                     self._send_json(res)
 
-                elif path == "/manifest.json":
-                    manifest = {
-                        "name": "RB Agent OS",
-                        "short_name": "RB Agent",
-                        "start_url": "/",
-                        "display": "standalone",
-                        "background_color": "#060A13",
-                        "theme_color": "#070B14",
-                        "description": "Autonomous Operating System Agent for Ram Binay kumar Pandit",
-                        "icons": [
-                            {
-                                "src": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/svgs/solid/atom.svg",
-                                "sizes": "192x192 512x512",
-                                "type": "image/svg+xml"
-                            }
-                        ]
-                    }
-                    self._send_json(manifest)
-
-                elif path == "/" or path == "/app":
-                    from core.web_ui import WEB_HTML
-                    self.send_response(200)
-                    self.send_header("Content-Type", "text/html; charset=utf-8")
-                    self.end_headers()
-                    self.wfile.write(WEB_HTML.encode("utf-8"))
-
                 else:
                     self._send_json({"error": "Not Found", "path": path}, status=404)
 
             def do_POST(self):
+                client_ip = self.client_address[0] if self.client_address else ""
+                is_local = client_ip in ("127.0.0.1", "::1", "localhost")
+                api_secret = getattr(assistant_ref.config, "API_SECRET_KEY", "")
+                if api_secret and not is_local and not self._is_authorized():
+                    self._send_json({"error": "Unauthorized"}, status=401)
+                    return
+
                 content_len = int(self.headers.get("Content-Length", 0))
                 body = self.rfile.read(content_len)
 
@@ -158,7 +209,7 @@ class RBServer:
                 elif path == "/api/settings":
                     for k, v in payload.items():
                         db.set_setting(k, str(v))
-                    self._send_json({"success": True, "settings": db.get_all_settings()})
+                    self._send_json({"success": True, "settings": sanitize_settings(db.get_all_settings())})
 
                 # 2. Chat with Auto-Memory Intent & Autonomous Routing
                 elif path == "/api/chat":
@@ -222,6 +273,11 @@ class RBServer:
                     agent_name = payload.get("agent", "")
                     action = payload.get("action", "")
                     params = payload.get("params", {})
+
+                    if agent_name in ("coding", "automation") and action in ("shell", "exec_script"):
+                        if not is_local and api_secret and not self._is_authorized():
+                            self._send_json({"agent": agent_name, "result": {"success": False, "error": "Unauthorized: Remote execution requires valid API_SECRET_KEY"}})
+                            return
 
                     if agent_name == "research":
                         query = params.get("query", "")
@@ -294,8 +350,13 @@ class RBServer:
                         result = automation.set_clipboard(args.get("text", ""))
                     elif action_name == "clipboard_get":
                         result = automation.get_clipboard()
+                    elif action_name in ("camera", "take_photo"):
+                        result = automation.take_photo(args.get("output_path", ""))
                     elif action_name == "shell":
-                        result = automation.execute_shell(args.get("command", ""))
+                        if not is_local and api_secret and not self._is_authorized():
+                            result = {"success": False, "error": "Unauthorized: Remote shell execution requires valid API_SECRET_KEY"}
+                        else:
+                            result = automation.execute_shell(args.get("command", ""))
                     elif action_name == "call_announcement":
                         result = sub_agents.execute_device_automation("call_announcement", args)
                     else:
@@ -445,6 +506,13 @@ class RBServer:
                     self._send_json({"error": "Not Found", "path": path}, status=404)
 
             def do_DELETE(self):
+                client_ip = self.client_address[0] if self.client_address else ""
+                is_local = client_ip in ("127.0.0.1", "::1", "localhost")
+                api_secret = getattr(assistant_ref.config, "API_SECRET_KEY", "")
+                if api_secret and not is_local and not self._is_authorized():
+                    self._send_json({"error": "Unauthorized"}, status=401)
+                    return
+
                 path = urllib.parse.urlparse(self.path).path
                 if path.startswith("/api/notes/"):
                     try:
@@ -467,15 +535,24 @@ class RBServer:
                     self._send_json({"error": "Not Found"}, status=404)
 
             def log_message(self, format, *args):
-                print(f"[RB.AI HTTP] {args[0]} {args[1]}")
+                pass
 
-        server = HTTPServer((self.host, self.port), RequestHandler)
+        self.server = ThreadingHTTPServer((self.host, self.port), RequestHandler)
         print(f"\n========================================================")
         print(f"🚀 RB.AI Gateway is active on http://{self.host}:{self.port}")
         print(f"📡 Connect your Flutter client to http://<Device_IP>:{self.port}")
         print(f"========================================================\n")
         try:
-            server.serve_forever()
+            self.server.serve_forever()
         except KeyboardInterrupt:
             print("\nShutting down RB.AI server.")
-            server.server_close()
+            self.server.server_close()
+
+    def stop(self):
+        """Stops the running HTTP server."""
+        if hasattr(self, "server") and self.server:
+            try:
+                self.server.shutdown()
+                self.server.server_close()
+            except Exception:
+                pass

@@ -1,9 +1,10 @@
 """
 RB.AI - Telegram Bot Real-time Webhook & Long-Polling Gateway
 Allows remote command execution, status monitoring, and conversational interaction
-with RB Agent via Telegram.
+with RB Agent via Telegram, secured with owner chat ID authorization.
 """
 
+import os
 import json
 import threading
 import time
@@ -23,11 +24,19 @@ class TelegramBotRunner:
 
     def load_token(self) -> str:
         cfg = db.get_integration("telegram")
-        return cfg.get("bot_token", "")
+        return cfg.get("bot_token", "") or os.getenv("TELEGRAM_BOT_TOKEN", "")
+
+    def load_admin_chat_id(self) -> str:
+        cfg = db.get_integration("telegram")
+        return str(cfg.get("admin_chat_id", "") or os.getenv("TELEGRAM_ADMIN_CHAT_ID", "")).strip()
 
     def save_token(self, token: str):
         self.token = token.strip()
-        db.save_integration("telegram", {"bot_token": self.token})
+        db.save_integration("telegram", {"bot_token": self.token, "admin_chat_id": self.load_admin_chat_id()})
+
+    def save_admin_chat_id(self, chat_id: str):
+        token = self.token or self.load_token()
+        db.save_integration("telegram", {"bot_token": token, "admin_chat_id": str(chat_id)})
 
     def _api_request(self, method: str, payload: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         token = self.token or self.load_token()
@@ -43,7 +52,7 @@ class TelegramBotRunner:
             with urllib.request.urlopen(req, timeout=15) as resp:
                 return json.loads(resp.read().decode("utf-8"))
         except urllib.error.HTTPError as e:
-            err_body = e.read().decode("utf-8")
+            err_body = e.read().decode("utf-8", errors="ignore")
             return {"ok": False, "description": f"HTTP {e.code}: {err_body}"}
         except Exception as e:
             return {"ok": False, "description": str(e)}
@@ -54,6 +63,14 @@ class TelegramBotRunner:
             "text": text,
             "parse_mode": parse_mode
         })
+
+    def is_authorized(self, chat_id: int) -> bool:
+        """Verifies if the sender is the authorized administrator."""
+        admin_id = self.load_admin_chat_id()
+        if not admin_id:
+            # If no admin configured, auto-pair first user upon /start
+            return True
+        return str(chat_id).strip() == admin_id
 
     def handle_update(self, update: Dict[str, Any]):
         msg = update.get("message")
@@ -67,19 +84,36 @@ class TelegramBotRunner:
         if not text:
             return
 
-        print(f"[Telegram] Received from {chat_id}: {text}")
+        print(f"[Telegram] Received from chat_id={chat_id}: {text}")
+
+        # Check authorization
+        admin_id = self.load_admin_chat_id()
+        if not admin_id and text.startswith("/start"):
+            # Auto-claim owner identity
+            self.save_admin_chat_id(str(chat_id))
+            print(f"[Telegram] Registered owner admin chat_id: {chat_id}")
+            admin_id = str(chat_id)
+
+        if not self.is_authorized(chat_id):
+            print(f"[Telegram Warning] Blocked unauthorized access from chat_id={chat_id}")
+            self.send_message(
+                chat_id,
+                "⛔ *Access Restricted*\n\nYou are not authorized to execute commands on this RB Agent device."
+            )
+            return
 
         # Command Routing
         if text.startswith("/start"):
             welcome = (
                 f"⚡ *RB Agent Connected*\n\n"
                 f"नमस्ते *{user_name}*! RB Agent is live and ready on your Android Termux device.\n\n"
+                f"Your Admin ID: `{chat_id}` (Authorized)\n\n"
                 f"Available Commands:\n"
                 f"• `/status` - Check device battery & system metrics\n"
                 f"• `/torch <on|off>` - Control flashlight\n"
                 f"• `/vibrate` - Haptic pulse test\n"
                 f"• `/note <text>` - Save a note to local memory\n"
-                f"• `/exec <cmd>` - Execute shell command\n"
+                f"• `/exec <cmd>` - Execute safe shell command\n"
                 f"• Or send any message to chat with RB AI!"
             )
             self.send_message(chat_id, welcome)
@@ -121,17 +155,24 @@ class TelegramBotRunner:
             if len(parts) > 1:
                 cmd = parts[1]
                 res = automation.execute_shell(cmd)
-                out = res.get("stdout") or res.get("stderr") or "(Empty output)"
-                self.send_message(chat_id, f"💻 *Execution Result:*\n```\n{out[:2000]}\n```")
+                if res.get("success"):
+                    out = res.get("stdout") or "(Execution finished with code 0)"
+                    self.send_message(chat_id, f"💻 *Execution Result:*\n```\n{out[:2000]}\n```")
+                else:
+                    err = res.get("error") or res.get("stderr") or "Execution failed"
+                    self.send_message(chat_id, f"⚠️ *Execution Blocked / Failed:*\n`{err[:1000]}`")
             else:
                 self.send_message(chat_id, "⚠️ Usage: `/exec ls -la`")
 
         else:
-            # Route through Gemini Engine if available
+            # Route to autonomous assistant orchestrator
             try:
-                from core.assistant import RBAssistant
-                # Simple response fallback
-                self.send_message(chat_id, f"🤖 *RB Agent*: Received '{text}'. Processing via autonomous orchestrator.")
+                from core.sub_agents import sub_agents
+                routed = sub_agents.route_and_process_intent(text)
+                if routed and routed.get("routed"):
+                    self.send_message(chat_id, f"🤖 *{routed.get('agent', 'RB Agent')}*:\n\n{routed.get('response')}")
+                else:
+                    self.send_message(chat_id, f"🤖 *RB Agent*: Received '{text}'. Request processed.")
             except Exception as e:
                 self.send_message(chat_id, f"Error: {e}")
 
@@ -148,36 +189,30 @@ class TelegramBotRunner:
                         self.last_update_id = u["update_id"]
                         self.handle_update(u)
             except Exception as e:
-                print(f"[Telegram Bot] Polling error: {e}")
                 time.sleep(3)
             time.sleep(1)
 
     def start(self, token: Optional[str] = None) -> Dict[str, Any]:
         if token:
             self.save_token(token)
-        else:
-            self.token = self.load_token()
-
-        if not self.token:
-            return {"success": False, "error": "Bot token not set"}
-
-        # Verify bot identity
-        me = self._api_request("getMe")
-        if not me.get("ok"):
-            return {"success": False, "error": me.get("description", "Failed to connect to Telegram")}
+        current_token = self.token or self.load_token()
+        if not current_token:
+            return {"success": False, "error": "Telegram Bot Token is required"}
 
         if self.running:
-            return {"success": True, "message": "Already running", "bot": me.get("result")}
+            return {"success": True, "message": "Telegram Bot is already running"}
+
+        # Verify token with Telegram API
+        test = self._api_request("getMe")
+        if not test.get("ok"):
+            return {"success": False, "error": f"Invalid bot token: {test.get('description')}"}
 
         self.running = True
         self.thread = threading.Thread(target=self._polling_loop, daemon=True)
         self.thread.start()
 
-        return {
-            "success": True,
-            "message": "Telegram Bot started successfully",
-            "bot_username": me.get("result", {}).get("username")
-        }
+        bot_username = test.get("result", {}).get("username", "RB_Agent_Bot")
+        return {"success": True, "message": f"Telegram Bot started as @{bot_username}"}
 
     def stop(self) -> Dict[str, Any]:
         self.running = False
@@ -185,10 +220,11 @@ class TelegramBotRunner:
 
     def get_status(self) -> Dict[str, Any]:
         token = self.token or self.load_token()
+        admin_id = self.load_admin_chat_id()
         return {
-            "is_running": self.running,
             "has_token": bool(token),
-            "masked_token": f"{token[:6]}...{token[-4:]}" if token and len(token) > 10 else ""
+            "is_running": self.running,
+            "admin_chat_id": admin_id or "Unassigned (Pairs on first /start)"
         }
 
 # Global singleton
