@@ -60,34 +60,40 @@ def main():
 
     # 2. Find workflow run corresponding to the latest commit
     print(f"🔍 Monitoring GitHub Actions CI/CD for repository '{REPO}'...")
-    url = f"https://api.github.com/repos/{REPO}/actions/runs?per_page=5"
+    url = f"https://api.github.com/repos/{REPO}/actions/runs?per_page=10"
 
     run_id = None
-    for attempt in range(15):
+    for attempt in range(30):
         try:
             req = urllib.request.Request(url, headers=headers)
             with urllib.request.urlopen(req, timeout=15) as resp:
                 data = json.loads(resp.read().decode())
                 runs = data.get("workflow_runs", [])
                 for r in runs:
-                    if not head_sha or r.get("head_sha") == head_sha:
+                    if head_sha and r.get("head_sha") == head_sha:
                         run_id = r["id"]
                         break
             if run_id:
                 break
         except Exception as e:
             pass
+        if attempt % 3 == 0:
+            print(f"   Waiting for GitHub Actions to trigger run for {head_sha[:7]}... (attempt {attempt+1}/30)")
         time.sleep(3)
 
     if not run_id:
-        # Fallback to the latest run in the repo
+        # Fallback: check latest run if head_sha was empty or latest run is in_progress
         req = urllib.request.Request(url, headers=headers)
         with urllib.request.urlopen(req, timeout=15) as resp:
             data = json.loads(resp.read().decode())
             runs = data.get("workflow_runs", [])
-            if runs:
+            for r in runs:
+                if r.get("status") in ["queued", "in_progress"] or (head_sha and r.get("head_sha") == head_sha):
+                    run_id = r["id"]
+                    break
+            if not run_id and runs:
                 run_id = runs[0]["id"]
-            else:
+            elif not run_id:
                 print("❌ No workflow runs found.")
                 sys.exit(1)
 
